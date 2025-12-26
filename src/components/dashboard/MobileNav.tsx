@@ -1,5 +1,8 @@
+"use client";
+
 import { LayoutDashboard, FileText, PlusCircle, BarChart3, Settings, Menu, X } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const navItems = [
@@ -12,7 +15,7 @@ const navItems = [
 
 export const MobileNav = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation();
+  const pathname = usePathname();
 
   return (
     <div className="lg:hidden">
@@ -40,11 +43,11 @@ export const MobileNav = () => {
           <div className="absolute inset-0 bg-background/95 backdrop-blur-xl" />
           <nav className="relative p-4 space-y-2">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = pathname === item.href;
               return (
-                <NavLink
+                <Link
                   key={item.label}
-                  to={item.href}
+                  href={item.href}
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all ${
                     isActive
@@ -54,7 +57,7 @@ export const MobileNav = () => {
                 >
                   <item.icon className="h-5 w-5" />
                   {item.label}
-                </NavLink>
+                </Link>
               );
             })}
           </nav>

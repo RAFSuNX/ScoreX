@@ -1,36 +1,9 @@
+"use client";
+
 import { FileText, TrendingUp, Flame, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
-
-const stats = [
-  { 
-    label: "Total Exams", 
-    value: 47, 
-    icon: FileText, 
-    suffix: "",
-    change: "+5 this week"
-  },
-  { 
-    label: "Average Score", 
-    value: 82, 
-    icon: TrendingUp, 
-    suffix: "%",
-    change: "+3% from last month"
-  },
-  { 
-    label: "Current Streak", 
-    value: 12, 
-    icon: Flame, 
-    suffix: " days",
-    change: "Personal best!"
-  },
-  { 
-    label: "Study Time", 
-    value: 156, 
-    icon: Clock, 
-    suffix: " hrs",
-    change: "23 hrs this week"
-  },
-];
+import axios from 'axios';
+import { Skeleton } from "@/components/ui/skeleton";
 
 const AnimatedNumber = ({ value, suffix }: { value: number; suffix: string }) => {
   const [displayValue, setDisplayValue] = useState(0);
@@ -54,15 +27,81 @@ const AnimatedNumber = ({ value, suffix }: { value: number; suffix: string }) =>
     return () => clearInterval(timer);
   }, [value]);
 
+  const formatValue = (val: number) => {
+    if (suffix === " hrs") {
+      return (val / 3600).toFixed(1);
+    }
+    return Math.round(val);
+  }
+
   return (
-    <span className="number-badge text-4xl">{displayValue}{suffix}</span>
+    <span className="number-badge text-4xl">{formatValue(displayValue)}{suffix}</span>
   );
 };
 
 export const StatsOverview = () => {
+  const [stats, setStats] = useState<any[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await axios.get('/api/stats/overview');
+        const data = response.data;
+        const formattedStats = [
+          { 
+            label: "Total Exams", 
+            value: data.totalExams, 
+            icon: FileText, 
+            suffix: "",
+            change: "+5 this week" // Mock data
+          },
+          { 
+            label: "Average Score", 
+            value: data.averageScore, 
+            icon: TrendingUp, 
+            suffix: "%",
+            change: "+3% from last month" // Mock data
+          },
+          { 
+            label: "Current Streak", 
+            value: data.currentStreak, 
+            icon: Flame, 
+            suffix: " days",
+            change: "Personal best!" // Mock data
+          },
+          { 
+            label: "Study Time", 
+            value: data.totalTimeSpent, 
+            icon: Clock, 
+            suffix: " hrs",
+            change: "23 hrs this week" // Mock data
+          },
+        ];
+        setStats(formattedStats);
+      } catch (error) {
+        console.error("Failed to fetch stats overview", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="h-[168px] w-full rounded-3xl" />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {stats.map((stat, index) => (
+      {stats?.map((stat, index) => (
         <div
           key={stat.label}
           className="morphic-card p-6 group hover:-translate-y-1 transition-all duration-300"

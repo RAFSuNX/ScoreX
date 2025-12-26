@@ -1,0 +1,81 @@
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import axios from 'axios';
+
+const generateQuestionsSchema = z.object({
+  examId: z.string(),
+});
+
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || !session.user.id) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { examId } = generateQuestionsSchema.parse(body);
+
+    const exam = await prisma.exam.findUnique({
+      where: { id: examId },
+    });
+
+    if (!exam || !exam.sourceText) {
+      return NextResponse.json({ message: 'Exam or source text not found' }, { status: 404 });
+    }
+
+    const prompt = `Based on the following text, generate 10 questions in a JSON object format with a "questions" key, which contains an array of questions. Each question should be an object with the following fields: "questionText" (string), "questionType" (enum: "MULTIPLE_CHOICE", "TRUE_FALSE", "SHORT_ANSWER"), "options" (object with keys A, B, C, D for MULTIPLE_CHOICE, null otherwise), "correctAnswer" (string, the key for MULTIPLE_CHOICE), and "explanation" (string).
+
+Text: """
+${exam.sourceText}
+"""`;
+
+    const response = await axios.post(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        model: process.env.AI_MODEL_GENERATION || 'openai/gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: "json_object" },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        },
+      }
+    );
+
+    const aiResponse = response.data.choices[0].message.content;
+    const generatedQuestions = JSON.parse(aiResponse).questions;
+
+    const createdQuestions = await prisma.$transaction(
+      generatedQuestions.map((q: any, index: number) =>
+        prisma.question.create({
+          data: {
+            examId: exam.id,
+            questionText: q.questionText,
+            questionType: q.questionType,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+            explanation: q.explanation,
+            points: 1,
+            order: index + 1,
+          },
+        })
+      )
+    );
+
+    return NextResponse.json(createdQuestions, { status: 200 });
+
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
+    }
+    console.error(error);
+    return NextResponse.json({ message: 'An unexpected error occurred.' }, { status: 500 });
+  }
+}
+

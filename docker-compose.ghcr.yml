@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  scorex:
+    image: ghcr.io/rafsunx/scorex:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://scorex_user:scorex_password@postgres:5432/scorex_db
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - NODE_ENV=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      - POSTGRES_USER=scorex_user
+      - POSTGRES_PASSWORD=scorex_password
+      - POSTGRES_DB=scorex_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scorex_user -d scorex_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

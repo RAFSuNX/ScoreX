@@ -1,5 +1,8 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Check, Sparkles, Zap, Crown } from "lucide-react";
+import Link from "next/link";
 
 const tiers = [
   {
@@ -148,13 +151,15 @@ export const Pricing = () => {
                 </ul>
                 
                 {/* CTA Button */}
-                <Button 
-                  variant={tier.featured ? "hero" : "glass"} 
-                  className="w-full"
-                  size="lg"
-                >
-                  {tier.buttonText}
-                </Button>
+                <Link href="/signup" className="w-full">
+                  <Button
+                    variant={tier.featured ? "hero" : "glass"}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {tier.buttonText}
+                  </Button>
+                </Link>
               </div>
             ))}
           </div>

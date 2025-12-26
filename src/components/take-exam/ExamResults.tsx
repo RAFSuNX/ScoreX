@@ -1,5 +1,7 @@
+"use client";
+
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import {
   Trophy,
   Clock,
@@ -76,7 +78,7 @@ const ExamResults = ({
   timeSpent,
   questionResults,
 }: ExamResultsProps) => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(new Set());
   
   const score = Math.round((correctAnswers / totalQuestions) * 100);
@@ -323,7 +325,7 @@ const ExamResults = ({
             Retake Exam
           </Button>
           <Button
-            onClick={() => navigate("/dashboard")}
+            onClick={() => router.push("/dashboard")}
             className="flex-1 gap-2"
           >
             <LayoutDashboard className="w-4 h-4" />

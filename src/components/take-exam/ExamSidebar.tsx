@@ -1,6 +1,7 @@
 import { Clock, Flag, Send, Star, X, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Question } from "./QuestionCard";
 
 interface ExamSidebarProps {
   isOpen: boolean;
@@ -8,9 +9,10 @@ interface ExamSidebarProps {
   timeRemaining: number;
   currentQuestion: number;
   totalQuestions: number;
-  answeredQuestions: Set<number>;
-  flaggedQuestions: Set<number>;
-  onGoToQuestion: (questionNumber: number) => void;
+  questions: Question[]; // Pass the actual questions to map IDs
+  answeredQuestionIds: Set<string>;
+  flaggedQuestionIds: Set<string>;
+  onGoToQuestion: (questionIndex: number) => void;
   onToggleFlag: () => void;
   isFlagged: boolean;
   onSubmit: () => void;
@@ -28,8 +30,9 @@ const ExamSidebar = ({
   timeRemaining,
   currentQuestion,
   totalQuestions,
-  answeredQuestions,
-  flaggedQuestions,
+  questions,
+  answeredQuestionIds,
+  flaggedQuestionIds,
   onGoToQuestion,
   onToggleFlag,
   isFlagged,
@@ -95,39 +98,37 @@ const ExamSidebar = ({
               Questions Overview
             </h3>
             <div className="grid grid-cols-5 gap-2">
-              {Array.from({ length: totalQuestions }, (_, i) => i + 1).map(
-                (num) => {
-                  const isAnswered = answeredQuestions.has(num);
-                  const isFlaggedQ = flaggedQuestions.has(num);
-                  const isCurrent = num === currentQuestion;
+              {questions.map((q, index) => {
+                const isAnswered = answeredQuestionIds.has(String(q.id));
+                const isFlaggedQ = flaggedQuestionIds.has(String(q.id));
+                const isCurrent = index === currentQuestion;
 
-                  return (
-                    <button
-                      key={num}
-                      onClick={() => {
-                        onGoToQuestion(num);
-                        onClose();
-                      }}
-                      className={cn(
-                        "relative w-full aspect-square rounded-lg text-sm font-medium transition-all flex items-center justify-center",
-                        isCurrent
-                          ? "bg-primary text-primary-foreground ring-2 ring-primary"
-                          : isAnswered
-                          ? "bg-green-500/20 text-green-500 border border-green-500/30"
-                          : "bg-muted/50 text-muted-foreground border border-border/50 hover:bg-muted"
-                      )}
-                    >
-                      {num}
-                      {isFlaggedQ && (
-                        <Star
-                          className="absolute -top-1 -right-1 w-3 h-3 text-yellow-500"
-                          fill="currentColor"
-                        />
-                      )}
-                    </button>
-                  );
-                }
-              )}
+                return (
+                  <button
+                    key={q.id}
+                    onClick={() => {
+                      onGoToQuestion(index);
+                      onClose();
+                    }}
+                    className={cn(
+                      "relative w-full aspect-square rounded-lg text-sm font-medium transition-all flex items-center justify-center",
+                      isCurrent
+                        ? "bg-primary text-primary-foreground ring-2 ring-primary"
+                        : isAnswered
+                        ? "bg-green-500/20 text-green-500 border border-green-500/30"
+                        : "bg-muted/50 text-muted-foreground border border-border/50 hover:bg-muted"
+                    )}
+                  >
+                    {index + 1}
+                    {isFlaggedQ && (
+                      <Star
+                        className="absolute -top-1 -right-1 w-3 h-3 text-yellow-500"
+                        fill="currentColor"
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

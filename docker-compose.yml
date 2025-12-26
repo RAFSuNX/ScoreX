@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  scorex:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://scorex_user:scorex_password@postgres:5432/scorex_db
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=super-secret-key-change-in-production-abc123xyz789
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      - POSTGRES_USER=scorex_user
+      - POSTGRES_PASSWORD=scorex_password
+      - POSTGRES_DB=scorex_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:

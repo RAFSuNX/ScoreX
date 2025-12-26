@@ -1,0 +1,216 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scorex
+  namespace: scorex
+  labels:
+    app: scorex
+spec:
+  replicas: 2 # High availability with 2 replicas
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: scorex
+  template:
+    metadata:
+      labels:
+        app: scorex
+    spec:
+      # Init container to run migrations
+      initContainers:
+      - name: migration
+        image: your-registry/scorex:latest # IMPORTANT: Replace with your actual image repository
+        command: ['sh', '-c', 'npx prisma migrate deploy']
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://scorex_user:scorex_password@postgres:5432/scorex_db?schema=public"
+      containers:
+      - name: scorex
+        image: your-registry/scorex:latest # IMPORTANT: Replace with your actual image repository
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: DATABASE_URL
+          value: "postgresql://scorex_user:scorex_password@postgres:5432/scorex_db?schema=public"
+        - name: NEXTAUTH_URL
+          value: "https://scorex.yourdomain.com" # IMPORTANT: Replace with your actual production URL
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: scorex-secret
+              key: nextauth-secret
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: scorex-secret
+              key: openrouter-api-key
+        - name: AI_MODEL_GENERATION
+          value: "openai/gpt-3.5-turbo"
+        - name: AI_MODEL_GRADING
+          value: "openai/gpt-4-turbo-preview"
+        - name: AI_MODEL_ANALYSIS
+          value: "mistralai/mixtral-8x7b-instruct"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scorex
+  namespace: scorex
+  labels:
+    app: scorex
+spec:
+  type: ClusterIP
+  selector:
+    app: scorex
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3000
+    name: http
+  sessionAffinity: ClientIP
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: scorex-secret
+  namespace: scorex
+type: Opaque
+data:
+  # Base64 encoded secrets
+  nextauth-secret: "NWI5NjU4MzQ5OGQwNzM0NjdhMGM1ZjA1ODA2ODRlOTBiM2JhOWQxNDBiYzBjYTE2MjViMzhlNDgzNzJjYWIyYw=="
+  openrouter-api-key: "c2stb3ItdjEtNTVkNGFiZDc0MGU4NmRmODNmNWY3OTJlM2FlNmJkMjY3OTQ1NGNjZTM2ZGRlZDVjNTcxNzVmZDQ2NWJjZjUzYQ=="
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: scorex
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # Important for databases
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:14-alpine
+        ports:
+        - containerPort: 5432
+          name: postgres
+          protocol: TCP
+        env:
+        - name: POSTGRES_DB
+          value: "scorex_db"
+        - name: POSTGRES_USER
+          value: "scorex_user"
+        - name: POSTGRES_PASSWORD
+          value: "scorex_password"
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - scorex_user
+            - -d
+            - scorex_db
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - scorex_user
+            - -d
+            - scorex_db
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: scorex
+  labels:
+    app: postgres
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+    name: postgres
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: scorex
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi # Increased storage for production
+  storageClassName: local-path # Adjust based on your K3s storage class

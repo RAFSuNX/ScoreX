@@ -1,5 +1,8 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Zap, Users, FileCheck, Rocket, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 const stats = [
   { value: "10K+", label: "Students", icon: Users },
@@ -61,11 +64,13 @@ export const Hero = () => {
 
         {/* CTAs with unique styling */}
         <div className="flex flex-col sm:flex-row items-center gap-4 mb-20">
-          <Button variant="hero" size="lg" className="group">
-            Start Learning Free
-            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Button>
-          <Button variant="hero-outline" size="lg">
+          <Link href="/signup">
+            <Button variant="hero" size="lg" className="group">
+              Start Learning Free
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Button>
+          </Link>
+          <Button variant="hero-outline" size="lg" onClick={() => window.scrollTo({ top: document.getElementById('features')?.offsetTop || 0, behavior: 'smooth' })}>
             Watch Demo
           </Button>
         </div>

@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Mail, Lock, User, Eye, EyeOff, Check, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 
 type AuthMode = "login" | "signup" | "forgot";
 
@@ -21,6 +23,7 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -52,29 +55,103 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
     setIsLoading(true);
     setErrors({});
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    if (mode === "forgot") {
-      setEmailSent(true);
-      setIsLoading(false);
-      return;
-    }
-
     if (mode === "signup") {
-      if (!formData.agreeTerms) {
-        setErrors({ terms: "You must agree to the terms" });
-        setIsLoading(false);
-        return;
-      }
       if (formData.password !== formData.confirmPassword) {
         setErrors({ confirmPassword: "Passwords don't match" });
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Passwords don't match",
+        });
         setIsLoading(false);
         return;
       }
-    }
+      try {
+        const response = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.fullName,
+            email: formData.email,
+            password: formData.password,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          setErrors({ form: data.message || 'Something went wrong.' });
+          toast({
+            variant: "destructive",
+            title: "Signup Failed",
+            description: data.message || 'Something went wrong.',
+          });
+        } else {
+          toast({
+            title: "Account Created!",
+            description: "Signing you in...",
+          });
+          // Automatically sign in after successful signup
+          const signInResult = await signIn('credentials', {
+            redirect: false,
+            email: formData.email,
+            password: formData.password,
+          });
+          if (signInResult?.ok) {
+            toast({
+              title: "Success!",
+              description: "Welcome to ScoreX!",
+            });
+            router.push('/dashboard');
+          } else {
+            setErrors({ form: signInResult?.error || 'Login failed after signup.' });
+            toast({
+              variant: "destructive",
+              title: "Login Failed",
+              description: signInResult?.error || 'Login failed after signup.',
+            });
+          }
+        }
+      } catch (error) {
+        setErrors({ form: 'An unexpected error occurred.' });
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: 'An unexpected error occurred.',
+        });
+      }
 
-    // Redirect to dashboard (temporary - will be replaced with actual auth)
-    router.push("/dashboard");
+    } else if (mode === "login") {
+      try {
+        const result = await signIn('credentials', {
+          redirect: false,
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (result?.error) {
+          setErrors({ form: 'Invalid email or password.' });
+          toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: "Invalid email or password.",
+          });
+        } else if (result?.ok) {
+          toast({
+            title: "Welcome back!",
+            description: "Successfully signed in.",
+          });
+          router.push('/dashboard');
+        }
+      } catch (error) {
+        setErrors({ form: 'An unexpected error occurred.' });
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "An unexpected error occurred.",
+        });
+      }
+    }
+    // Handle 'forgot' mode if necessary
+
     setIsLoading(false);
   };
 
@@ -250,6 +327,42 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
                       <p className="text-xs text-muted-foreground">{strengthLabel}</p>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Confirm Password - Only for Signup */}
+              {mode === "signup" && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      className="pl-10 pr-10 h-12"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-sm text-destructive">{errors.confirmPassword}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Error Message */}
+              {errors.form && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <p className="text-sm text-destructive">{errors.form}</p>
                 </div>
               )}
 

@@ -1,3 +1,5 @@
+"use client";
+
 import { Flame, Trophy } from "lucide-react";
 
 // Generate mock data for 90 days
