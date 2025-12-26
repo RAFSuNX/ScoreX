@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String?
+  passwordHash String
+  plan         Plan          @default(FREE)
+  createdAt    DateTime      @default(now())
+  exams        Exam[]
+  attempts     ExamAttempt[]
+  streak       Streak?
+  stats        UserStats?
+}
+
+model Exam {
+  id            String        @id @default(cuid())
+  title         String
+  description   String?
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  sourceType    SourceType
+  sourcePdfUrl  String?
+  sourceText    String?       @db.Text
+  difficulty    Difficulty    @default(MEDIUM)
+  subject       String
+  questions     Question[]
+  attempts      ExamAttempt[]
+  createdAt     DateTime      @default(now())
+  aiModel       String
+}
+
+model Question {
+  id            String       @id @default(cuid())
+  examId        String
+  exam          Exam         @relation(fields: [examId], references: [id])
+  questionText  String       @db.Text
+  questionType  QuestionType
+  options       Json?
+  correctAnswer String       @db.Text
+  explanation   String?      @db.Text
+  points        Int          @default(1)
+  order         Int
+}
+
+model ExamAttempt {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  examId      String
+  exam        Exam     @relation(fields: [examId], references: [id])
+  answers     Json
+  score       Float
+  maxScore    Float
+  percentage  Float
+  aiFeedback  String?  @db.Text
+  timeSpent   Int
+  completedAt DateTime @default(now())
+}
+
+model Streak {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  currentStreak  Int      @default(0)
+  longestStreak  Int      @default(0)
+  lastActiveDate DateTime @default(now())
+  totalExams     Int      @default(0)
+  totalQuestions Int      @default(0)
+}
+
+model UserStats {
+  id             String @id @default(cuid())
+  userId         String @unique
+  user           User   @relation(fields: [userId], references: [id])
+  totalExams     Int    @default(0)
+  examsPassed    Int    @default(0)
+  examsFailed    Int    @default(0)
+  avgScore       Float  @default(0)
+  totalTimeSpent Int    @default(0)
+  subjectStats   Json
+}
+
+enum Plan {
+  FREE
+  PRO
+  PREMIUM
+}
+
+enum SourceType {
+  PDF
+  DESCRIPTION
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+}
