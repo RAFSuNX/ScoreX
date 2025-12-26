@@ -59,17 +59,18 @@ export default function StatsPage() {
     score: attempt.percentage,
   }));
 
-  const subjectData = Object.entries(
-    attempts.reduce((acc, attempt) => {
-      const subject = attempt.exam.subject;
-      if (!acc[subject]) {
-        acc[subject] = { count: 0, totalScore: 0 };
-      }
-      acc[subject].count++;
-      acc[subject].totalScore += attempt.percentage;
-      return acc;
-    }, {} as Record<string, { count: number; totalScore: number }>)
-  ).map(([subject, data]) => ({
+  type SubjectStats = { count: number; totalScore: number };
+  const subjectStats = attempts.reduce((acc, attempt) => {
+    const subject = attempt.exam.subject;
+    if (!acc[subject]) {
+      acc[subject] = { count: 0, totalScore: 0 };
+    }
+    acc[subject].count++;
+    acc[subject].totalScore += attempt.percentage;
+    return acc;
+  }, {} as Record<string, SubjectStats>);
+
+  const subjectData = (Object.entries(subjectStats) as [string, SubjectStats][]).map(([subject, data]) => ({
     name: subject,
     value: Math.round(data.totalScore / data.count),
   }));
