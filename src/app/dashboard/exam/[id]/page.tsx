@@ -130,7 +130,7 @@ export default function TakeExamPage({ params }: { params: { id: string } }) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [exam, isSubmitted, handleSubmitExam]); // Add handleSubmitExam to dependency array
+  }, [exam, isSubmitted]); // handleSubmitExam is stable (useCallback) so no need in deps
 
   const handleAnswer = (questionId: string, answer: any) => {
     setAnswers((prev) => ({ ...prev, [questionId]: answer }));

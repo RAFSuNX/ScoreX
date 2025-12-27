@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import axios from 'axios';
 
 const generateQuestionsSchema = z.object({
@@ -10,6 +12,7 @@ const generateQuestionsSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  let body: any;
   try {
     const session = await getServerSession(authOptions);
 
@@ -17,7 +20,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await req.json();
+    body = await req.json();
     const { examId } = generateQuestionsSchema.parse(body);
 
     const exam = await prisma.exam.findUnique({
@@ -37,13 +40,13 @@ ${exam.sourceText}
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: process.env.AI_MODEL_GENERATION || 'openai/gpt-3.5-turbo',
+        model: env.AI_MODEL_GENERATION,
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: "json_object" },
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
         },
       }
     );
@@ -72,9 +75,10 @@ ${exam.sourceText}
 
   } catch (error: any) {
     if (error instanceof z.ZodError) {
+      logger.warn('AI generation validation failed', { issues: error.issues });
       return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
     }
-    console.error(error);
+    logger.error('AI generation error', error, { examId: body?.examId });
     return NextResponse.json({ message: 'An unexpected error occurred.' }, { status: 500 });
   }
 }

@@ -7,7 +7,7 @@ import { AttemptStatus } from '@prisma/client';
 
 const saveProgressSchema = z.object({
   inProgressAnswers: z.record(z.string(), z.string()).optional(),
-  currentTimeSpent: z.number().int().optional(),
+  timeSpent: z.number().int().optional(),
   currentQuestionIndex: z.number().int().optional(),
   flaggedQuestions: z.array(z.string()).optional(),
 });
@@ -28,7 +28,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const body = await req.json();
-    const { inProgressAnswers, currentTimeSpent, currentQuestionIndex, flaggedQuestions } = saveProgressSchema.parse(body);
+    const { inProgressAnswers, timeSpent, currentQuestionIndex, flaggedQuestions } = saveProgressSchema.parse(body);
 
     // Find an existing IN_PROGRESS attempt for this user and exam
     let attempt = await prisma.examAttempt.findFirst({
@@ -45,7 +45,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         where: { id: attempt.id },
         data: {
           inProgressAnswers,
-          currentTimeSpent,
+          timeSpent,
           currentQuestionIndex,
           flaggedQuestions,
           updatedAt: new Date(),
@@ -59,7 +59,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
           examId: examId,
           status: AttemptStatus.IN_PROGRESS,
           inProgressAnswers,
-          currentTimeSpent,
+          timeSpent,
           currentQuestionIndex,
           flaggedQuestions,
         },

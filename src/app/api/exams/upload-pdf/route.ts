@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 import { PDFExtract } from 'pdf.js-extract';
 
 export async function POST(req: Request) {
+  let session: any;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -46,10 +48,15 @@ export async function POST(req: Request) {
     // and get a public URL here. For now, use a dummy URL.
     const dummySourcePdfUrl = `https://example.com/pdfs/${pdfFile.name}`; 
 
+    logger.info('PDF uploaded and extracted successfully', {
+      fileName: pdfFile.name,
+      textLength: extractedText.length,
+      userId: session.user.id
+    });
     return NextResponse.json({ extractedText, sourcePdfUrl: dummySourcePdfUrl }, { status: 200 });
 
   } catch (error: any) {
-    console.error('Error during PDF upload and extraction:', error);
+    logger.error('Error during PDF upload and extraction', error, { userId: session?.user?.id });
     if (error instanceof Error) {
         return NextResponse.json({ message: `PDF extraction failed: ${error.message}` }, { status: 500 });
     }

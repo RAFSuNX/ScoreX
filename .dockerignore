@@ -46,9 +46,8 @@ __mocks__
 docs
 
 # Docker
-Dockerfile
 docker-compose.yml
-.dockerignore
+docker-compose.*.yml
 
 # K8s
 k8s

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
@@ -24,8 +25,9 @@ const createExamSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  let session: any;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ message: 'Unauthorized - Please sign in' }, { status: 401 });
@@ -94,12 +96,14 @@ export async function POST(req: Request) {
       },
     });
 
+    logger.info('Exam created successfully', { examId: exam.id, userId: session.user.id });
     return NextResponse.json(exam, { status: 201 });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
+      logger.warn('Exam creation validation failed', { issues: error.issues });
       return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
     }
-    console.error(error);
+    logger.error('Exam creation error', error, { userId: session?.user?.id });
     return NextResponse.json({ message: 'An unexpected error occurred.' }, { status: 500 });
   }
 }

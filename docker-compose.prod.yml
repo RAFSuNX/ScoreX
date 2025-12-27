@@ -6,12 +6,13 @@ services:
       context: .
       target: runner
     ports:
-      - "3000:3000"
+      - "${APP_PORT:-3000}:3000"
     environment:
-      - DATABASE_URL=postgresql://scorex_user:scorex_password@postgres:5432/scorex_db
-      - NEXTAUTH_URL=http://localhost:3000
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - AI_MODEL_GENERATION=${AI_MODEL_GENERATION:-openai/gpt-3.5-turbo}
       - NODE_ENV=production
     depends_on:
       postgres:
@@ -23,23 +24,31 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - scorex-network
 
   postgres:
     image: postgres:14-alpine
     environment:
-      - POSTGRES_USER=scorex_user
-      - POSTGRES_PASSWORD=scorex_password
-      - POSTGRES_DB=scorex_db
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U scorex_user -d scorex_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - scorex-network
 
 volumes:
   postgres_data:
+
+networks:
+  scorex-network:
+    driver: bridge

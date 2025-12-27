@@ -37,8 +37,8 @@ async function getStatsForPeriod(userId: string, startDate: Date, endDate: Date)
 
   const totalExams = exams.length;
   const totalAttempts = attempts.length;
-  const averageScore = totalAttempts > 0 ? attempts.reduce((acc, a) => acc + a.percentage, 0) / totalAttempts : 0;
-  const totalTimeSpent = attempts.reduce((acc, a) => acc + a.timeSpent, 0); // Sum of timeSpent in seconds
+  const averageScore = totalAttempts > 0 ? attempts.reduce((acc, a) => acc + (a.percentage || 0), 0) / totalAttempts : 0;
+  const totalTimeSpent = attempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0); // Sum of timeSpent in seconds
 
   return { totalExams, averageScore, totalTimeSpent };
 }
@@ -108,26 +108,26 @@ export async function GET(req: Request) {
     // Calculate overall stats for displaying absolute values
     const totalExams = allExams.length;
     const totalAttempts = allAttempts.length;
-    const averageScore = totalAttempts > 0 ? allAttempts.reduce((acc, a) => acc + a.percentage, 0) / totalAttempts : 0;
-    const totalTimeSpent = allAttempts.reduce((acc, a) => acc + a.timeSpent, 0);
+    const averageScore = totalAttempts > 0 ? allAttempts.reduce((acc, a) => acc + (a.percentage || 0), 0) / totalAttempts : 0;
+    const totalTimeSpent = allAttempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0);
 
     // Stats for current week
     const currentWeekExams = filterByDate(allExams, currentWeekStart, now, 'createdAt').length;
     const currentWeekAttempts = filterByDate(allAttempts, currentWeekStart, now, 'completedAt');
-    const currentWeekTimeSpent = currentWeekAttempts.reduce((acc, a) => acc + a.timeSpent, 0);
+    const currentWeekTimeSpent = currentWeekAttempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0);
 
     // Stats for previous week
     const previousWeekExams = filterByDate(allExams, previousWeekStart, previousWeekEnd, 'createdAt').length;
     const previousWeekAttempts = filterByDate(allAttempts, previousWeekStart, previousWeekEnd, 'completedAt');
-    const previousWeekTimeSpent = previousWeekAttempts.reduce((acc, a) => acc + a.timeSpent, 0);
+    const previousWeekTimeSpent = previousWeekAttempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0);
 
     // Stats for current month
     const currentMonthAttempts = filterByDate(allAttempts, currentMonthStart, now, 'completedAt');
-    const currentMonthAverageScore = currentMonthAttempts.length > 0 ? currentMonthAttempts.reduce((acc, a) => acc + a.percentage, 0) / currentMonthAttempts.length : 0;
+    const currentMonthAverageScore = currentMonthAttempts.length > 0 ? currentMonthAttempts.reduce((acc, a) => acc + (a.percentage || 0), 0) / currentMonthAttempts.length : 0;
 
     // Stats for previous month
     const previousMonthAttempts = filterByDate(allAttempts, previousMonthStart, previousMonthEnd, 'completedAt');
-    const previousMonthAverageScore = previousMonthAttempts.length > 0 ? previousMonthAttempts.reduce((acc, a) => acc + a.percentage, 0) / previousMonthAttempts.length : 0;
+    const previousMonthAverageScore = previousMonthAttempts.length > 0 ? previousMonthAttempts.reduce((acc, a) => acc + (a.percentage || 0), 0) / previousMonthAttempts.length : 0;
 
 
     const streak = await prisma.streak.findUnique({

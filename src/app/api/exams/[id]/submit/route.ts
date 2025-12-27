@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import axios from 'axios';
-import { AttemptStatus } from '@prisma/client'; // Import AttemptStatus enum
+import { AttemptStatus, Prisma } from '@prisma/client'; // Import AttemptStatus enum and Prisma
 
 const submitExamSchema = z.object({
   answers: z.record(z.string(), z.string()).optional(), // questionId: userAnswer
@@ -106,7 +106,7 @@ Please provide personalized feedback for the student. The feedback should be enc
         examAttempt = await prisma.examAttempt.update({
             where: {
                 id: attemptId,
-                userId: userId, // Ensure user owns the attempt
+                userId: session.user.id, // Ensure user owns the attempt
                 status: AttemptStatus.IN_PROGRESS,
             },
             data: {
@@ -118,9 +118,9 @@ Please provide personalized feedback for the student. The feedback should be enc
                 timeSpent,
                 aiFeedback,
                 completedAt: new Date(),
-                inProgressAnswers: null, // Clear in-progress data
+                inProgressAnswers: Prisma.JsonNull, // Clear in-progress data
                 currentQuestionIndex: null,
-                flaggedQuestions: null,
+                flaggedQuestions: Prisma.JsonNull,
             },
         });
     } else {

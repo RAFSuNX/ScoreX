@@ -29,7 +29,7 @@ export async function GET(req: Request) {
       if (!subjectStats[subject]) {
         subjectStats[subject] = { scores: [], count: 0 };
       }
-      subjectStats[subject].scores.push(attempt.percentage);
+      subjectStats[subject].scores.push(attempt.percentage || 0);
       subjectStats[subject].count++;
     }
     
