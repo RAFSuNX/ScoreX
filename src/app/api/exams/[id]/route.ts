@@ -27,9 +27,14 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     // For privacy, we should not return the correct answers to the client before the exam is submitted.
     // However, for the take-exam page, we need to show the questions.
     // We will strip the correct answers from the questions before sending them to the client.
+    // Also map database field names to frontend expected names
     const questionsForStudent = exam.questions.map(q => {
-      const { correctAnswer, explanation, ...question } = q;
-      return question;
+      const { correctAnswer, explanation, questionText, questionType, ...rest } = q;
+      return {
+        ...rest,
+        text: questionText,
+        type: questionType.toLowerCase().replace(/_/g, '-'), // Convert MULTIPLE_CHOICE to multiple-choice
+      };
     });
 
     const examForStudent = { ...exam, questions: questionsForStudent };
