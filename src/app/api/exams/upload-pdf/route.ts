@@ -2,15 +2,6 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PDFExtract } from 'pdf.js-extract';
-import formidable from 'formidable';
-import fs from 'fs';
-
-// Disable Next.js body parser for this route
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 
 export async function POST(req: Request) {
   try {
@@ -20,16 +11,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const form = formidable({});
-    const [fields, files] = await form.parse(req);
+    const formData = await req.formData();
+    const pdfFile = formData.get('pdfFile') as File | null;
 
-    if (!files.pdfFile || files.pdfFile.length === 0) {
+    if (!pdfFile) {
       return NextResponse.json({ message: 'No PDF file uploaded' }, { status: 400 });
     }
 
-    const pdfFile = files.pdfFile[0];
-
-    if (pdfFile.mimetype !== 'application/pdf') {
+    if (pdfFile.type !== 'application/pdf') {
       return NextResponse.json({ message: 'Only PDF files are allowed' }, { status: 400 });
     }
 
@@ -37,8 +26,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'File size exceeds 10MB limit' }, { status: 400 });
     }
 
+    // Convert File to Buffer for pdf.js-extract
+    const arrayBuffer = await pdfFile.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
     const pdfExtract = new PDFExtract();
-    const data = await pdfExtract.extract(pdfFile.filepath, {});
+    const data = await pdfExtract.extractBuffer(buffer, {}); // Use extractBuffer
 
     let extractedText = '';
     for (const page of data.pages) {
@@ -49,17 +42,13 @@ export async function POST(req: Request) {
       }
     }
 
-    // Clean up temporary file
-    fs.unlink(pdfFile.filepath, (err) => {
-      if (err) console.error('Error deleting temp file:', err);
-    });
-
-    // For now, return a dummy URL. In a real app, this would be the URL from cloud storage.
-    const dummySourcePdfUrl = `https://example.com/pdfs/${pdfFile.newFilename}.pdf`; 
+    // In a real app, you would upload the PDF to cloud storage (e.g., S3)
+    // and get a public URL here. For now, use a dummy URL.
+    const dummySourcePdfUrl = `https://example.com/pdfs/${pdfFile.name}`; 
 
     return NextResponse.json({ extractedText, sourcePdfUrl: dummySourcePdfUrl }, { status: 200 });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error during PDF upload and extraction:', error);
     if (error instanceof Error) {
         return NextResponse.json({ message: `PDF extraction failed: ${error.message}` }, { status: 500 });
