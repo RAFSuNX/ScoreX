@@ -1,0 +1,16 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: scorex
+  namespace: scorex
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`scorex.rogx.cc`)  # Change this to your desired domain
+      services:
+        - name: scorex
+          port: 80
+  tls:
+    certResolver: letsencrypt
