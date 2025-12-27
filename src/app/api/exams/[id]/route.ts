@@ -29,11 +29,18 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     // We will strip the correct answers from the questions before sending them to the client.
     // Also map database field names to frontend expected names
     const questionsForStudent = exam.questions.map(q => {
-      const { correctAnswer, explanation, questionText, questionType, ...rest } = q;
+      const { correctAnswer, explanation, questionText, questionType, options, ...rest } = q;
+
+      // Convert options object {A: "...", B: "...", C: "...", D: "..."} to array ["...", "...", "...", "..."]
+      const optionsArray = options && typeof options === 'object' && !Array.isArray(options)
+        ? Object.values(options)
+        : options;
+
       return {
         ...rest,
         text: questionText,
         type: questionType.toLowerCase().replace(/_/g, '-'), // Convert MULTIPLE_CHOICE to multiple-choice
+        options: optionsArray,
       };
     });
 
