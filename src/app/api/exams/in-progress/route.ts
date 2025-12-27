@@ -14,11 +14,22 @@ export async function GET(req: Request) {
 
     const userId = session.user.id;
 
+    // Get examId from query parameters if provided
+    const url = new URL(req.url);
+    const examId = url.searchParams.get('examId');
+
+    const whereClause: any = {
+      userId: userId,
+      status: AttemptStatus.IN_PROGRESS,
+    };
+
+    // If examId is provided, filter by it
+    if (examId) {
+      whereClause.examId = examId;
+    }
+
     const inProgressAttempt = await prisma.examAttempt.findFirst({
-      where: {
-        userId: userId,
-        status: AttemptStatus.IN_PROGRESS,
-      },
+      where: whereClause,
       orderBy: {
         updatedAt: 'desc', // Get the most recently updated in-progress attempt
       },
@@ -36,7 +47,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ message: 'No in-progress exam found' }, { status: 404 });
     }
 
-    return NextResponse.json(inProgressAttempt, { status: 200 });
+    // Map timeSpent to currentTimeSpent for frontend compatibility
+    const response = {
+      ...inProgressAttempt,
+      currentTimeSpent: inProgressAttempt.timeSpent,
+    };
+
+    return NextResponse.json(response, { status: 200 });
 
   } catch (error: any) {
     console.error('Error fetching in-progress exam:', error);

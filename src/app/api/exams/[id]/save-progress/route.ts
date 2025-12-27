@@ -7,7 +7,7 @@ import { AttemptStatus } from '@prisma/client';
 
 const saveProgressSchema = z.object({
   inProgressAnswers: z.record(z.string(), z.string()).optional(),
-  timeSpent: z.number().int().optional(),
+  currentTimeSpent: z.number().int().optional(), // Frontend sends currentTimeSpent
   currentQuestionIndex: z.number().int().optional(),
   flaggedQuestions: z.array(z.string()).optional(),
 });
@@ -28,7 +28,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const body = await req.json();
-    const { inProgressAnswers, timeSpent, currentQuestionIndex, flaggedQuestions } = saveProgressSchema.parse(body);
+    const { inProgressAnswers, currentTimeSpent, currentQuestionIndex, flaggedQuestions } = saveProgressSchema.parse(body);
 
     // Find an existing IN_PROGRESS attempt for this user and exam
     let attempt = await prisma.examAttempt.findFirst({
@@ -45,7 +45,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         where: { id: attempt.id },
         data: {
           inProgressAnswers,
-          timeSpent,
+          timeSpent: currentTimeSpent, // Map currentTimeSpent to timeSpent column
           currentQuestionIndex,
           flaggedQuestions,
           updatedAt: new Date(),
@@ -59,14 +59,20 @@ export async function POST(req: Request, { params }: { params: { id: string } })
           examId: examId,
           status: AttemptStatus.IN_PROGRESS,
           inProgressAnswers,
-          timeSpent,
+          timeSpent: currentTimeSpent, // Map currentTimeSpent to timeSpent column
           currentQuestionIndex,
           flaggedQuestions,
         },
       });
     }
 
-    return NextResponse.json(attempt, { status: 200 });
+    // Map timeSpent to currentTimeSpent for frontend compatibility
+    const response = {
+      ...attempt,
+      currentTimeSpent: attempt.timeSpent,
+    };
+
+    return NextResponse.json(response, { status: 200 });
 
   } catch (error: any) {
     if (error instanceof z.ZodError) {
