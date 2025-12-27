@@ -37,6 +37,8 @@ interface ExamResultsProps {
   correctAnswers: number;
   timeSpent: number; // in seconds
   questionResults: QuestionResult[];
+  aiFeedback: string; // New prop for AI feedback
+  calculatedPercentile: number; // New prop for calculated percentile
 }
 
 const AnimatedScore = ({ score }: { score: number }) => {
@@ -77,6 +79,8 @@ const ExamResults = ({
   correctAnswers,
   timeSpent,
   questionResults,
+  aiFeedback, // Destructure new prop
+  calculatedPercentile, // Destructure new prop
 }: ExamResultsProps) => {
   const router = useRouter();
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
@@ -84,8 +88,8 @@ const ExamResults = ({
   const score = Math.round((correctAnswers / totalQuestions) * 100);
   const accuracy = Math.round((correctAnswers / totalQuestions) * 100);
   
-  // Calculate percentile (mock)
-  const percentile = score >= 90 ? 5 : score >= 80 ? 15 : score >= 70 ? 30 : score >= 60 ? 50 : 70;
+  // Use calculatedPercentile instead of mock
+  const percentile = calculatedPercentile;
 
   const getScoreMessage = (score: number) => {
     if (score >= 90) return { text: "Outstanding!", color: "text-green-500" };
@@ -109,9 +113,10 @@ const ExamResults = ({
     });
   };
 
-  // Calculate strengths and weaknesses
-  const totalPoints = questionResults.reduce((sum, q) => sum + q.points, 0);
-  const earnedPoints = questionResults.filter(q => q.isCorrect).reduce((sum, q) => sum + q.points, 0);
+  // Calculate strengths and weaknesses - now dynamic from AI feedback
+  // These will be parsed from aiFeedback
+  // const totalPoints = questionResults.reduce((sum, q) => sum + q.points, 0);
+  // const earnedPoints = questionResults.filter(q => q.isCorrect).reduce((sum, q) => sum + q.points, 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -203,30 +208,12 @@ const ExamResults = ({
             <h2 className="text-lg font-semibold text-foreground">AI Analysis</h2>
           </div>
           
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-green-500 mb-2">Strengths</h3>
-              <p className="text-sm text-muted-foreground">
-                Strong understanding of core concepts. You demonstrated excellent recall
-                and application of fundamental principles. Your quick response time shows
-                confidence in the material.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-orange-500 mb-2">Areas to Improve</h3>
-              <p className="text-sm text-muted-foreground">
-                Consider reviewing advanced topics and edge cases. Some questions required
-                deeper analysis that could benefit from additional practice.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-primary mb-2">Recommended Next Steps</h3>
-              <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-                <li>Review the questions you got wrong below</li>
-                <li>Practice similar problems to reinforce understanding</li>
-                <li>Consider retaking this exam in a few days</li>
-              </ul>
-            </div>
+          <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+            {aiFeedback ? (
+              <p>{aiFeedback}</p>
+            ) : (
+              <p>No AI feedback available for this exam.</p>
+            )}
           </div>
         </div>
 
