@@ -15,9 +15,11 @@ spec:
       labels:
         app: scorex
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: scorex
-          image: ghcr.io/rafsunx/scorex:latest
+          image: ghcr.io/rafsunx/scorex:main
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
