@@ -54,28 +54,28 @@ export const StatsOverview = () => {
             value: data.totalExams, 
             icon: FileText, 
             suffix: "",
-            change: "+5 this week" // Mock data
+            change: data.totalExamsChange
           },
           { 
             label: "Average Score", 
             value: data.averageScore, 
             icon: TrendingUp, 
             suffix: "%",
-            change: "+3% from last month" // Mock data
+            change: data.averageScoreChange
           },
           { 
             label: "Current Streak", 
             value: data.currentStreak, 
             icon: Flame, 
             suffix: " days",
-            change: "Personal best!" // Mock data
+            change: `Best: ${data.longestStreak} days` 
           },
           { 
             label: "Study Time", 
             value: data.totalTimeSpent, 
             icon: Clock, 
             suffix: " hrs",
-            change: "23 hrs this week" // Mock data
+            change: data.totalTimeSpentChange
           },
         ];
         setStats(formattedStats);

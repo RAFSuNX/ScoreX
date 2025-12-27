@@ -52,18 +52,31 @@ model Question {
 }
 
 model ExamAttempt {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  examId      String
-  exam        Exam     @relation(fields: [examId], references: [id])
-  answers     Json
-  score       Float
-  maxScore    Float
-  percentage  Float
-  aiFeedback  String?  @db.Text
-  timeSpent   Int
-  completedAt DateTime @default(now())
+  id                     String        @id @default(cuid())
+  userId                 String
+  user                   User          @relation(fields: [userId], references: [id])
+  examId                 String
+  exam                   Exam          @relation(fields: [examId], references: [id])
+  status                 AttemptStatus @default(IN_PROGRESS)
+  submittedAnswers       Json? // Final answers after submission
+  inProgressAnswers      Json? // Answers saved during the exam session
+  score                  Float?
+  maxScore               Float?
+  percentage             Float?
+  aiFeedback             String?       @db.Text
+  timeSpent              Int?
+  completedAt            DateTime?
+  currentQuestionIndex   Int?          @default(0)
+  flaggedQuestions       Json? // Stores IDs of flagged questions
+
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED // Optional: if we want to track abandoned attempts
 }
 
 model Streak {

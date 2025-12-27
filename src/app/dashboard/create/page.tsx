@@ -15,6 +15,7 @@ const steps = ["Source", "Configure", "Generate"];
 interface ExamData {
   sourceType: "pdf" | "topic";
   file?: File;
+  sourcePdfUrl?: string; // Add this field
   topic?: string;
   title: string;
   subject: string;
@@ -44,12 +45,37 @@ export default function CreateExamPage() {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
+      let finalSourceText: string | undefined;
+      let finalSourcePdfUrl: string | undefined;
+      let finalDescription: string;
+
+      if (examData.sourceType === 'pdf' && examData.file) {
+        // Upload PDF and extract text
+        const formData = new FormData();
+        formData.append('pdfFile', examData.file);
+
+        const uploadResponse = await axios.post('/api/exams/upload-pdf', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        finalSourceText = uploadResponse.data.extractedText;
+        finalSourcePdfUrl = uploadResponse.data.sourcePdfUrl; // Get the dummy URL
+        finalDescription = `An exam generated from your uploaded PDF file: ${examData.file.name}.`;
+      } else if (examData.sourceType === 'topic' && examData.topic) {
+        finalSourceText = examData.topic;
+        finalDescription = `An exam about ${examData.topic}.`;
+      } else {
+        throw new Error("Invalid source type or missing source data.");
+      }
+
       // 1. Create the exam record
       const createResponse = await axios.post('/api/exams/create', {
         title: examData.title,
-        description: `An exam about ${examData.topic || 'a PDF file'}.`,
+        description: finalDescription,
         sourceType: examData.sourceType === 'pdf' ? 'PDF' : 'DESCRIPTION',
-        sourceText: examData.topic, // Assuming topic for now, PDF upload needs more work
+        sourceText: finalSourceText,
+        sourcePdfUrl: finalSourcePdfUrl, // Pass sourcePdfUrl to API
         difficulty: examData.difficulty?.toUpperCase(),
         subject: examData.subject,
         aiModel: 'default-model', // Can be made dynamic later

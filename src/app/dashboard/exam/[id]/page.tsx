@@ -85,6 +85,21 @@ export default function TakeExamPage({ params }: { params: { id: string } }) {
     }
   };
 
+  const goToFirstUnansweredQuestion = () => {
+    if (!exam) return;
+    const firstUnansweredIndex = exam.questions.findIndex(
+      (q: Question) => !answers[q.id]
+    );
+    if (firstUnansweredIndex !== -1) {
+      setCurrentQuestion(firstUnansweredIndex);
+      setShowSubmitModal(false); // Close modal after navigating
+    } else {
+      // All questions answered, maybe show a message or just submit
+      setShowSubmitModal(false);
+      handleSubmitExam();
+    }
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -163,7 +178,7 @@ export default function TakeExamPage({ params }: { params: { id: string } }) {
       <SubmitConfirmModal
         isOpen={showSubmitModal}
         onClose={() => setShowSubmitModal(false)}
-        onReviewUnanswered={() => { /* TODO: Implement review unanswered questions */ }}
+        onReviewUnanswered={goToFirstUnansweredQuestion}
         onSubmitAnyway={handleSubmitExam}
         answeredCount={Object.keys(answers).length}
         flaggedCount={flaggedCount}

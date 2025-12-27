@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface QuestionResult {
-  id: number;
+  id: string;
   text: string;
   type: string;
   userAnswer: string | null;
@@ -79,7 +79,7 @@ const ExamResults = ({
   questionResults,
 }: ExamResultsProps) => {
   const router = useRouter();
-  const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(new Set());
+  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   
   const score = Math.round((correctAnswers / totalQuestions) * 100);
   const accuracy = Math.round((correctAnswers / totalQuestions) * 100);
@@ -97,7 +97,7 @@ const ExamResults = ({
 
   const scoreMessage = getScoreMessage(score);
 
-  const toggleQuestion = (id: number) => {
+  const toggleQuestion = (id: string) => {
     setExpandedQuestions((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {

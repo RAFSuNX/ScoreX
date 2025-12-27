@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export type QuestionType = "multiple-choice" | "true-false" | "short-answer";
 
 export interface Question {
-  id: number;
+  id: string;
   type: QuestionType;
   text: string;
   points: number;
@@ -141,10 +141,6 @@ const QuestionCard = ({
             />
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>{(selectedAnswer || "").length}/500 characters</span>
-              <span className="flex items-center gap-1 text-green-500">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                Auto-saved
-              </span>
             </div>
           </div>
         )}
