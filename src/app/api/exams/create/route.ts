@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { getAuthSession } from '@/lib/auth';
 import { Plan } from '@prisma/client'; // Import Plan enum from Prisma Client
+
+export const dynamic = "force-dynamic";
 
 // Define monthly exam limits based on user plan
 const MONTHLY_EXAM_LIMITS: Record<Plan, number> = {
@@ -24,10 +25,12 @@ const createExamSchema = z.object({
   aiModel: z.string().optional(),
 });
 
+type CreateExamPayload = z.infer<typeof createExamSchema>;
+
 export async function POST(req: Request) {
-  let session: any;
+  let session: Awaited<ReturnType<typeof getAuthSession>> = null;
   try {
-    session = await getServerSession(authOptions);
+    session = await getAuthSession();
 
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ message: 'Unauthorized - Please sign in' }, { status: 401 });
@@ -71,7 +74,7 @@ export async function POST(req: Request) {
         }
     }
 
-    const body = await req.json();
+    const body = (await req.json()) as CreateExamPayload;
     const { title, description, sourceType, sourceText, sourcePdfUrl, difficulty, subject, aiModel } = createExamSchema.parse(body);
 
     if (sourceType === 'DESCRIPTION' && !sourceText) {
@@ -98,7 +101,7 @@ export async function POST(req: Request) {
 
     logger.info('Exam created successfully', { examId: exam.id, userId: session.user.id });
     return NextResponse.json(exam, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       logger.warn('Exam creation validation failed', { issues: error.issues });
       return NextResponse.json({ message: error.issues[0].message }, { status: 400 });

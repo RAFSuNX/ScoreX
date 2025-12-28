@@ -49,12 +49,12 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.bin ./node_modules/.bin
 COPY --from=builder /app/prisma ./prisma
 
-# Copy the entrypoint script
-COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
+# Copy the entrypoint script outside the bind-mounted app dir
+COPY --from=builder /app/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # Switch to root to set permissions
 USER root
-RUN chmod +x ./docker-entrypoint.sh
+RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
 
 USER nextjs
 
@@ -63,5 +63,5 @@ EXPOSE 3000
 ENV PORT=3000
 
 # Use entrypoint script to run migrations before starting
-ENTRYPOINT ["./docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["node", "server.js"]

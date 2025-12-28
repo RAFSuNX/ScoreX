@@ -36,11 +36,11 @@ export const Navbar = () => {
       <div className="container relative px-4">
         <div className="flex h-20 items-center justify-between">
           {/* Logo - text only brand */}
-          <a href="/" className="flex items-center group">
+          <Link href="/" className="flex items-center group">
             <span className="text-2xl font-black tracking-tight">
               Score<span className="gradient-text">X</span>
             </span>
-          </a>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">

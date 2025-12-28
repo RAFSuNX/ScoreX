@@ -1,20 +1,42 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { getAuthSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import axios from 'axios';
+import { Prisma } from '@prisma/client';
+
+export const dynamic = "force-dynamic";
 
 const generateQuestionsSchema = z.object({
   examId: z.string(),
 });
 
+type GenerateQuestionsBody = z.infer<typeof generateQuestionsSchema>;
+
+interface GeneratedQuestionPayload {
+  questionText: string;
+  questionType: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+  options: Record<string, string> | null;
+  correctAnswer: string;
+  explanation: string;
+}
+
+interface OpenRouterChoice {
+  message: {
+    content: string;
+  };
+}
+
+interface OpenRouterResponse {
+  choices: OpenRouterChoice[];
+}
+
 export async function POST(req: Request) {
-  let body: any;
+  let body: GenerateQuestionsBody | null = null;
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAuthSession();
 
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -37,7 +59,7 @@ Text: """
 ${exam.sourceText}
 """`;
 
-    const response = await axios.post(
+    const response = await axios.post<OpenRouterResponse>(
       'https://openrouter.ai/api/v1/chat/completions',
       {
         model: env.AI_MODEL_GENERATION,
@@ -51,29 +73,32 @@ ${exam.sourceText}
       }
     );
 
-    const aiResponse = response.data.choices[0].message.content;
-    const generatedQuestions = JSON.parse(aiResponse).questions;
+    const aiResponse = response.data.choices[0]?.message.content ?? '{"questions": []}';
+    const generatedQuestions = JSON.parse(aiResponse).questions as GeneratedQuestionPayload[];
 
     const createdQuestions = await prisma.$transaction(
-      generatedQuestions.map((q: any, index: number) =>
-        prisma.question.create({
+      generatedQuestions.map((q, index) => {
+        const optionsValue =
+          q.options === null ? undefined : (q.options as Prisma.JsonObject | undefined);
+
+        return prisma.question.create({
           data: {
             examId: exam.id,
             questionText: q.questionText,
             questionType: q.questionType,
-            options: q.options,
+            options: optionsValue,
             correctAnswer: q.correctAnswer,
             explanation: q.explanation,
             points: 1,
             order: index + 1,
           },
-        })
-      )
+        });
+      })
     );
 
     return NextResponse.json(createdQuestions, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       logger.warn('AI generation validation failed', { issues: error.issues });
       return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
@@ -82,4 +107,3 @@ ${exam.sourceText}
     return NextResponse.json({ message: 'An unexpected error occurred.' }, { status: 500 });
   }
 }
-

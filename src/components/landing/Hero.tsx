@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Zap, Users, FileCheck, Rocket, ArrowRight } from "lucide-react";
+import { Users, FileCheck, Rocket, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -112,7 +112,7 @@ export const Hero = () => {
 
             {/* Right column - Redesigned stat cards */}
             <div className="space-y-4 animate-fadeInUp" style={{animationDelay: '0.6s', opacity: 0}}>
-              {stats.map((stat, index) => (
+              {stats.map((stat) => (
                 <div
                   key={stat.label}
                   className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-background/50 to-background/30 backdrop-blur-sm p-5 hover:border-primary/30 transition-all duration-300 hover:translate-x-2"

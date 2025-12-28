@@ -7,7 +7,6 @@ import { Mail, Lock, User, Eye, EyeOff, Check, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 
 type AuthMode = "login" | "signup" | "forgot";
@@ -32,7 +31,6 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
     confirmPassword: "",
     rememberMe: false,
     agreeTerms: false,
-    plan: "free"
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -55,18 +53,18 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
     setIsLoading(true);
     setErrors({});
 
-    if (mode === "signup") {
-      if (formData.password !== formData.confirmPassword) {
-        setErrors({ confirmPassword: "Passwords don't match" });
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Passwords don't match",
-        });
-        setIsLoading(false);
-        return;
-      }
-      try {
+    try {
+      if (mode === "signup") {
+        if (formData.password !== formData.confirmPassword) {
+          setErrors({ confirmPassword: "Passwords don't match" });
+          toast({
+            variant: "destructive",
+            title: "Password mismatch",
+            description: "Please make sure both passwords match.",
+          });
+          return;
+        }
+
         const response = await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -76,90 +74,107 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
             password: formData.password,
           }),
         });
+
         const data = await response.json();
         if (!response.ok) {
-          setErrors({ form: data.message || 'Something went wrong.' });
+          const description = data.message || "We couldn't create that account.";
+          setErrors({ form: description });
           toast({
             variant: "destructive",
-            title: "Signup Failed",
-            description: data.message || 'Something went wrong.',
+            title: "Signup failed",
+            description,
           });
-        } else {
-          toast({
-            title: "Account Created!",
-            description: "Signing you in...",
-          });
-          // Automatically sign in after successful signup
+          return;
+        }
+
+        toast({
+          title: "Account created!",
+          description: "Signing you in...",
+        });
+
+        try {
           const signInResult = await signIn('credentials', {
             redirect: false,
             email: formData.email,
             password: formData.password,
           });
+
           if (signInResult?.ok) {
             toast({
-              title: "Success!",
-              description: "Welcome to ScoreX!",
+              title: "Welcome to ScoreX!",
+              description: "You're all set.",
             });
             router.push('/dashboard');
-          } else {
-            setErrors({ form: signInResult?.error || 'Login failed after signup.' });
-            toast({
-              variant: "destructive",
-              title: "Login Failed",
-              description: signInResult?.error || 'Login failed after signup.',
-            });
+            return;
           }
-        }
-      } catch (error) {
-        setErrors({ form: 'An unexpected error occurred.' });
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: 'An unexpected error occurred.',
-        });
-      }
 
-    } else if (mode === "login") {
-      try {
-        const result = await signIn('credentials', {
-          redirect: false,
-          email: formData.email,
-          password: formData.password,
-        });
+          const signInError =
+            signInResult?.error === "CredentialsSignin"
+              ? "We created your account, but automatic sign-in failed. Please log in manually."
+              : signInResult?.error || "We couldn't sign you in automatically.";
 
-        if (result?.error) {
-          setErrors({ form: 'Invalid email or password.' });
+          setErrors({ form: signInError });
           toast({
             variant: "destructive",
-            title: "Login Failed",
-            description: "Invalid email or password.",
+            title: "Automatic login failed",
+            description: signInError,
           });
-        } else if (result?.ok) {
+        } catch (error) {
+          const description =
+            error instanceof Error
+              ? error.message
+              : "We created your account, but automatic sign-in failed. Please try logging in manually.";
+          setErrors({ form: description });
           toast({
-            title: "Welcome back!",
-            description: "Successfully signed in.",
+            variant: "destructive",
+            title: "Automatic login failed",
+            description,
           });
-          router.push('/dashboard');
         }
-      } catch (error) {
-        setErrors({ form: 'An unexpected error occurred.' });
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "An unexpected error occurred.",
-        });
+      } else if (mode === "login") {
+        try {
+          const result = await signIn('credentials', {
+            redirect: false,
+            email: formData.email,
+            password: formData.password,
+          });
+
+          if (result?.error) {
+            const description =
+              result.error === "CredentialsSignin"
+                ? "Invalid email or password."
+                : result.error;
+            setErrors({ form: description });
+            toast({
+              variant: "destructive",
+              title: "Login failed",
+              description,
+            });
+          } else if (result?.ok) {
+            toast({
+              title: "Welcome back!",
+              description: "Successfully signed in.",
+            });
+            router.push('/dashboard');
+          }
+        } catch (error) {
+          const description =
+            error instanceof Error
+              ? error.message
+              : "We couldn't reach the server. Please try again.";
+          setErrors({ form: description });
+          toast({
+            variant: "destructive",
+            title: "Login failed",
+            description,
+          });
+        }
       }
+      // Handle 'forgot' mode if necessary
+    } finally {
+      setIsLoading(false);
     }
-    // Handle 'forgot' mode if necessary
-
-    setIsLoading(false);
   };
-
-  const plans = [
-    { id: "free", name: "FREE", price: "$0", feature: "5 exams/month" },
-    { id: "pro", name: "PRO", price: "$9", feature: "Unlimited exams" },
-    { id: "premium", name: "PREMIUM", price: "$19", feature: "AI tutoring" }
-  ];
 
   if (emailSent) {
     return (
@@ -175,7 +190,7 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">Check Your Email</h2>
             <p className="text-muted-foreground mb-6">
-              We've sent a password reset link to <strong>{formData.email}</strong>
+              We&rsquo;ve sent a password reset link to <strong>{formData.email}</strong>
             </p>
             <Button
               onClick={() => { setMode("login"); setEmailSent(false); }}
@@ -215,14 +230,14 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
                 ? "Continue your personalized learning journey with AI-powered exams."
                 : mode === "signup"
                 ? "Experience personalized education powered by artificial intelligence."
-                : "Don't worry, it happens to the best of us."}
+                : "Don&rsquo;t worry, it happens to the best of us."}
             </p>
           </div>
 
           {/* Testimonial */}
           <div className="backdrop-blur-xl bg-glass border border-glass-border rounded-2xl p-6">
             <p className="text-foreground italic mb-4">
-              "ScoreX transformed how I study. The AI-generated exams are spot-on!"
+              &ldquo;ScoreX transformed how I study. The AI-generated exams are spot-on!&rdquo;
             </p>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary" />
@@ -375,7 +390,7 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
               <div className="text-center text-sm">
                 {mode === "login" ? (
                   <p className="text-muted-foreground">
-                    Don't have an account?{" "}
+                    Don&rsquo;t have an account?{" "}
                     <button type="button" onClick={() => router.push("/signup")} className="text-primary font-medium hover:underline">
                       Sign up
                     </button>

@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { getAuthSession } from '@/lib/auth';
 import axios from 'axios';
-import { AttemptStatus, Prisma } from '@prisma/client'; // Import AttemptStatus enum and Prisma
+import { AttemptStatus, Prisma, ExamAttempt } from '@prisma/client'; // Import AttemptStatus enum and Prisma
+
+export const dynamic = "force-dynamic";
 
 const submitExamSchema = z.object({
   answers: z.record(z.string(), z.string()).optional(), // questionId: userAnswer
@@ -12,9 +13,34 @@ const submitExamSchema = z.object({
   attemptId: z.string().optional(), // Optional: if resuming an existing attempt
 });
 
+type SubmitExamPayload = z.infer<typeof submitExamSchema>;
+
+interface DetailedReportItem {
+  id: string;
+  text: string;
+  type: string;
+  userAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+  explanation: string | null;
+  points: number;
+}
+
+interface FeedbackChoice {
+  message: {
+    content: string;
+  };
+}
+
+interface FeedbackResponse {
+  choices: FeedbackChoice[];
+}
+
+type SubjectStatsRecord = Record<string, { count: number; totalScore: number; avgScore: number }>;
+
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAuthSession();
 
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -26,7 +52,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ message: 'Exam ID is required' }, { status: 400 });
     }
 
-    const body = await req.json();
+    const body = (await req.json()) as SubmitExamPayload;
     const { answers, timeSpent, attemptId } = submitExamSchema.parse(body);
 
     const exam = await prisma.exam.findUnique({
@@ -42,14 +68,16 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     let score = 0;
     const maxScore = exam.questions.reduce((acc, q) => acc + q.points, 0);
-    const detailedReport = [];
+    const detailedReport: DetailedReportItem[] = [];
 
     for (const question of exam.questions) {
       const userAnswer = answers?.[question.id];
       // Note: Comparing answers.
       // For short-answer, case-insensitive might be too lenient depending on requirements.
       // For multiple-choice/true-false, this is generally fine.
-      const isCorrect = userAnswer && userAnswer.toLowerCase() === question.correctAnswer.toLowerCase();
+      const isCorrect = Boolean(
+        userAnswer && userAnswer.toLowerCase() === question.correctAnswer.toLowerCase(),
+      );
       if (isCorrect) {
         score += question.points;
       }
@@ -84,7 +112,7 @@ ${JSON.stringify(detailedReport, null, 2)}
 
 Please provide personalized feedback for the student. The feedback should be encouraging and constructive. Highlight their strengths and weaknesses. Provide specific suggestions for improvement. The feedback should be in Markdown format.`;
 
-    const feedbackResponse = await axios.post(
+    const feedbackResponse = await axios.post<FeedbackResponse>(
       'https://openrouter.ai/api/v1/chat/completions',
       {
         model: process.env.AI_MODEL_GRADING || 'openai/gpt-4-turbo-preview',
@@ -97,9 +125,9 @@ Please provide personalized feedback for the student. The feedback should be enc
       }
     );
 
-    const aiFeedback = feedbackResponse.data.choices[0].message.content;
+    const aiFeedback = feedbackResponse.data.choices[0]?.message.content ?? '';
 
-    let examAttempt;
+    let examAttempt: ExamAttempt;
 
     if (attemptId) {
         // Find and update existing IN_PROGRESS attempt
@@ -153,7 +181,7 @@ Please provide personalized feedback for the student. The feedback should be enc
       const newAvgScore = ((userStats.avgScore * userStats.totalExams) + percentage) / newTotalExams;
 
       // Get subject stats
-      const subjectStats = (userStats.subjectStats as any) || {};
+      const subjectStats = (userStats.subjectStats as SubjectStatsRecord | null) || {};
       const subjectKey = exam.subject;
       if (!subjectStats[subjectKey]) {
         subjectStats[subjectKey] = { count: 0, totalScore: 0, avgScore: 0 };
@@ -175,7 +203,7 @@ Please provide personalized feedback for the student. The feedback should be enc
       });
     } else {
       // Create new user stats
-      const subjectStats = {
+      const subjectStats: SubjectStatsRecord = {
         [exam.subject]: {
           count: 1,
           totalScore: percentage,
@@ -249,7 +277,7 @@ Please provide personalized feedback for the student. The feedback should be enc
 
     return NextResponse.json({ ...examAttempt, detailedReport, calculatedPercentile }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
     }
@@ -257,5 +285,3 @@ Please provide personalized feedback for the student. The feedback should be enc
     return NextResponse.json({ message: 'An unexpected error occurred.' }, { status: 500 });
   }
 }
-
-

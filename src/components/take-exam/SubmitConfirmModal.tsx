@@ -34,7 +34,7 @@ const SubmitConfirmModal = ({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md backdrop-blur-xl bg-card/90 border border-border/50 rounded-3xl p-8 shadow-2xl animate-scale-in">
+      <div className="relative w-full max-w-md backdrop-blur-xl bg-card/90 border border-border/50 rounded-3xl p-8 shadow-2xl">
         {/* Icon */}
         <div className="flex justify-center mb-6">
           <div

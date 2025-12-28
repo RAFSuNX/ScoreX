@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Check } from "lucide-react";
 
@@ -34,9 +34,26 @@ export const StepExamConfig = ({ onNext, onBack }: StepExamConfigProps) => {
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
   const [subjectOpen, setSubjectOpen] = useState(false);
+  const subjectDropdownRef = useRef<HTMLDivElement>(null);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [questionCount, setQuestionCount] = useState(15);
   const [selectedTypes, setSelectedTypes] = useState<string[]>(["multiple-choice"]);
+
+  useEffect(() => {
+    if (!subjectOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        subjectDropdownRef.current &&
+        !subjectDropdownRef.current.contains(event.target as Node)
+      ) {
+        setSubjectOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [subjectOpen]);
 
   const toggleQuestionType = (typeId: string) => {
     setSelectedTypes((prev) =>
@@ -71,7 +88,7 @@ export const StepExamConfig = ({ onNext, onBack }: StepExamConfigProps) => {
 
       <div className="max-w-xl mx-auto space-y-6">
         {/* Exam Title */}
-        <div className="morphic-card p-4">
+        <div className="morphic-card p-4 overflow-visible">
           <label className="block text-sm font-medium text-foreground mb-2">
             Exam Title
           </label>
@@ -89,8 +106,9 @@ export const StepExamConfig = ({ onNext, onBack }: StepExamConfigProps) => {
           <label className="block text-sm font-medium text-foreground mb-2">
             Subject
           </label>
-          <div className="relative">
+          <div className="relative" ref={subjectDropdownRef}>
             <button
+              type="button"
               onClick={() => setSubjectOpen(!subjectOpen)}
               className="w-full p-3 bg-muted/30 border border-border/50 rounded-xl text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
@@ -99,22 +117,25 @@ export const StepExamConfig = ({ onNext, onBack }: StepExamConfigProps) => {
               </span>
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${subjectOpen ? "rotate-180" : ""}`} />
             </button>
-            {subjectOpen && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border/50 rounded-xl overflow-hidden z-20 shadow-lg">
-                {subjects.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => {
-                      setSubject(s);
-                      setSubjectOpen(false);
-                    }}
-                    className="w-full p-3 text-left text-foreground hover:bg-muted/50 transition-colors"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div
+              className={`absolute top-full left-0 right-0 mt-2 bg-card border border-border/50 rounded-xl overflow-hidden shadow-lg transition-opacity ${
+                subjectOpen ? "z-50 opacity-100" : "pointer-events-none opacity-0"
+              }`}
+            >
+              {subjects.map((s) => (
+                <button
+                  type="button"
+                  key={s}
+                  onClick={() => {
+                    setSubject(s);
+                    setSubjectOpen(false);
+                  }}
+                  className="w-full p-3 text-left text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

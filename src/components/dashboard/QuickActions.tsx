@@ -16,7 +16,7 @@ export const QuickActions = () => {
       try {
         const response = await axios.get('/api/exams/in-progress');
         setInProgressExamId(response.data.examId);
-      } catch (error) {
+      } catch {
         // console.error("No in-progress exam found or failed to fetch:", error);
         setInProgressExamId(null);
       } finally {

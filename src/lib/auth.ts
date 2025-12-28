@@ -1,11 +1,13 @@
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
 import { compare } from "bcryptjs";
+import { getServerSession } from "next-auth/next";
+import type { Session } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 
-export const authOptions: NextAuthOptions = {
+export const authOptions = {
   adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
@@ -48,13 +50,13 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
+    async jwt({ token, user }: { token: JWT; user?: { id?: string } | null }) {
+      if (user?.id) {
         token.id = user.id;
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user) {
         session.user.id = token.id as string;
       }
@@ -64,5 +66,9 @@ export const authOptions: NextAuthOptions = {
   secret: env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/login",
+    error: "/status/429",
   },
 };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const getAuthSession = () => getServerSession(authOptions as any) as Promise<Session | null>;

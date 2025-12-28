@@ -39,7 +39,7 @@ export const StepPreviewGenerate = ({
           Review & Generate
         </h2>
         <p className="text-muted-foreground">
-          Everything looks good? Let's create your exam!
+          Everything looks good? Let&rsquo;s create your exam!
         </p>
       </div>
 

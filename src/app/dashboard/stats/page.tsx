@@ -3,23 +3,46 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { BarChart3, TrendingUp, Target, Clock, Award, Zap } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import axios from "axios";
+
+interface UserStatsResponse {
+  totalExams: number;
+  examsPassed: number;
+  examsFailed: number;
+}
+
+interface AttemptExamInfo {
+  title: string;
+  subject: string;
+}
+
+interface AttemptResponse {
+  id: string;
+  percentage: number | null;
+  timeSpent: number | null;
+  completedAt: string;
+  exam: AttemptExamInfo;
+}
+
+interface OverviewResponse {
+  currentStreak: number;
+}
 
 export default function StatsPage() {
   const { data: session } = useSession();
-  const [userStats, setUserStats] = useState<any>(null);
-  const [attempts, setAttempts] = useState<any[]>([]);
-  const [streak, setStreak] = useState<any>(null);
+  const [userStats, setUserStats] = useState<UserStatsResponse | null>(null);
+  const [attempts, setAttempts] = useState<AttemptResponse[]>([]);
+  const [streak, setStreak] = useState<OverviewResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [statsRes, attemptsRes, overviewRes] = await Promise.all([
-          axios.get('/api/stats/user'),
-          axios.get('/api/stats/attempts'),
-          axios.get('/api/stats/overview'),
+          axios.get<UserStatsResponse>('/api/stats/user'),
+          axios.get<AttemptResponse[]>('/api/stats/attempts'),
+          axios.get<OverviewResponse>('/api/stats/overview'),
         ]);
         setUserStats(statsRes.data);
         setAttempts(attemptsRes.data);

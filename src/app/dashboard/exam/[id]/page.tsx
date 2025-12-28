@@ -12,25 +12,60 @@ import axios from "axios";
 const EXAM_DURATION = 30 * 60; // 30 minutes in seconds
 const SAVE_INTERVAL = 10 * 1000; // Save every 10 seconds
 
+type AnswerMap = Record<string, string | undefined>;
+
+interface ExamData {
+  id: string;
+  title: string;
+  subject: string;
+  questions: Question[];
+}
+
+interface InProgressAttempt {
+  id: string;
+  inProgressAnswers?: AnswerMap | null;
+  currentQuestionIndex: number | null;
+  currentTimeSpent: number | null;
+  flaggedQuestions?: string[];
+}
+
+interface SubmissionQuestionReport {
+  id: string;
+  isCorrect: boolean;
+  points: number;
+  userAnswer?: string | null;
+  correctAnswer?: string | null;
+  explanation?: string | null;
+  text?: string;
+  type?: string;
+}
+
+interface SubmissionResult {
+  timeSpent: number;
+  detailedReport: SubmissionQuestionReport[];
+  aiFeedback?: string;
+  calculatedPercentile?: number;
+}
+
 export default function TakeExamPage({ params }: { params: { id: string } }) {
-  const [exam, setExam] = useState<any>(null);
+  const [exam, setExam] = useState<ExamData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [attemptId, setAttemptId] = useState<string | null>(null); // New state for attempt ID
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<AnswerMap>({});
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<string>>(new Set());
   const [timeRemaining, setTimeRemaining] = useState(EXAM_DURATION);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submissionResult, setSubmissionResult] = useState<any>(null);
+  const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // useRef to hold mutable values without triggering re-renders in intervals
-  const answersRef = useRef(answers);
+  const answersRef = useRef<AnswerMap>(answers);
   const currentQuestionRef = useRef(currentQuestion);
   const timeRemainingRef = useRef(timeRemaining);
   const flaggedQuestionsRef = useRef(flaggedQuestions);
-  const attemptIdRef = useRef(attemptId);
+  const attemptIdRef = useRef<string | null>(attemptId);
 
   useEffect(() => {
     answersRef.current = answers;
@@ -54,16 +89,16 @@ export default function TakeExamPage({ params }: { params: { id: string } }) {
     const fetchExamAndAttempt = async () => {
       try {
         // Fetch Exam details
-        const examResponse = await axios.get(`/api/exams/${params.id}`);
+        const examResponse = await axios.get<ExamData>(`/api/exams/${params.id}`);
         setExam(examResponse.data);
 
         // Fetch existing IN_PROGRESS attempt for this exam and user
-        const attemptResponse = await axios.get(`/api/exams/in-progress?examId=${params.id}`);
+        const attemptResponse = await axios.get<InProgressAttempt | null>(`/api/exams/in-progress?examId=${params.id}`);
         const existingAttempt = attemptResponse.data;
 
         if (existingAttempt) {
           setAttemptId(existingAttempt.id);
-          if (existingAttempt.inProgressAnswers) {
+          if (existingAttempt.inProgressAnswers && Object.keys(existingAttempt.inProgressAnswers).length > 0) {
             setAnswers(existingAttempt.inProgressAnswers);
           }
           if (existingAttempt.currentQuestionIndex !== null) {
@@ -76,9 +111,8 @@ export default function TakeExamPage({ params }: { params: { id: string } }) {
             setFlaggedQuestions(new Set(existingAttempt.flaggedQuestions));
           }
         }
-      } catch (error) {
-        // console.error("No in-progress attempt found or failed to fetch:", error);
-        // If no in-progress attempt found, start fresh
+      } catch {
+        // No in-progress attempt found or failed to fetch; start fresh
       } finally {
         setIsLoading(false);
       }
@@ -94,7 +128,7 @@ export default function TakeExamPage({ params }: { params: { id: string } }) {
       // Only save if attemptId exists or if we are about to create one
       if (attemptIdRef.current || (exam && !attemptIdRef.current && Object.keys(answersRef.current).length > 0)) {
         try {
-          const response = await axios.post(`/api/exams/${params.id}/save-progress`, {
+          const response = await axios.post<{ id: string }>(`/api/exams/${params.id}/save-progress`, {
             attemptId: attemptIdRef.current, // Pass attemptId if already created
             inProgressAnswers: answersRef.current,
             currentTimeSpent: EXAM_DURATION - timeRemainingRef.current,
@@ -112,8 +146,45 @@ export default function TakeExamPage({ params }: { params: { id: string } }) {
 
     const interval = setInterval(saveProgress, SAVE_INTERVAL);
     return () => clearInterval(interval);
-  }, [exam, isSubmitted, isLoading]);
+  }, [exam, isSubmitted, isLoading, params.id]);
 
+
+  const handleAnswer = (questionId: string, answer: string) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: answer }));
+  };
+
+  const toggleFlag = () => {
+    if (!exam) {
+      return;
+    }
+    setFlaggedQuestions((prev) => {
+      const newFlags = new Set(prev);
+      const questionId = exam.questions[currentQuestion].id;
+      if (newFlags.has(questionId)) {
+        newFlags.delete(questionId);
+      } else {
+        newFlags.add(questionId);
+      }
+      return newFlags;
+    });
+  };
+
+  const handleSubmitExam = useCallback(async () => {
+    if (!exam) return;
+    try {
+      const response = await axios.post<SubmissionResult>(`/api/exams/${params.id}/submit`, {
+        answers: answersRef.current, // Use ref for latest answers
+        timeSpent: EXAM_DURATION - timeRemainingRef.current, // Use ref for latest time
+        attemptId: attemptIdRef.current, // Pass attemptId for update
+      });
+      setSubmissionResult(response.data);
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error("Failed to submit exam", error);
+    } finally {
+      setShowSubmitModal(false);
+    }
+  }, [exam, params.id]); // Dependencies for useCallback
 
   // --- Timer ---
   useEffect(() => {
@@ -130,41 +201,7 @@ export default function TakeExamPage({ params }: { params: { id: string } }) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [exam, isSubmitted]); // handleSubmitExam is stable (useCallback) so no need in deps
-
-  const handleAnswer = (questionId: string, answer: any) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: answer }));
-  };
-
-  const toggleFlag = () => {
-    setFlaggedQuestions((prev) => {
-      const newFlags = new Set(prev);
-      const questionId = exam.questions[currentQuestion].id;
-      if (newFlags.has(questionId)) {
-        newFlags.delete(questionId);
-      } else {
-        newFlags.add(questionId);
-      }
-      return newFlags;
-    });
-  };
-
-  const handleSubmitExam = useCallback(async () => {
-    if (!exam) return;
-    try {
-      const response = await axios.post(`/api/exams/${params.id}/submit`, {
-        answers: answersRef.current, // Use ref for latest answers
-        timeSpent: EXAM_DURATION - timeRemainingRef.current, // Use ref for latest time
-        attemptId: attemptIdRef.current, // Pass attemptId for update
-      });
-      setSubmissionResult(response.data);
-      setIsSubmitted(true);
-    } catch (error) {
-      console.error("Failed to submit exam", error);
-    } finally {
-      setShowSubmitModal(false);
-    }
-  }, [exam, params.id]); // Dependencies for useCallback
+  }, [exam, isSubmitted, handleSubmitExam]);
 
 
   const goToFirstUnansweredQuestion = () => {
@@ -191,11 +228,20 @@ export default function TakeExamPage({ params }: { params: { id: string } }) {
     return <div>Failed to load exam.</div>;
   }
 
-  const unansweredCount = exam.questions.filter((q: Question) => !answers[q.id]).length;
-  const flaggedCount = flaggedQuestions.size;
+  const answeredQuestionIds = new Set(Object.keys(answers));
 
   if (isSubmitted && submissionResult) {
-    const correctAnswers = submissionResult.detailedReport.filter((r: any) => r.isCorrect).length;
+    const correctAnswers = submissionResult.detailedReport.filter((r) => r.isCorrect).length;
+    const questionResults = submissionResult.detailedReport.map((result) => ({
+      id: result.id,
+      text: result.text || "",
+      type: result.type || "",
+      userAnswer: result.userAnswer ?? null,
+      correctAnswer: result.correctAnswer || "",
+      isCorrect: result.isCorrect,
+      explanation: result.explanation || "",
+      points: result.points,
+    }));
     return (
       <ExamResults
         examTitle={exam.title}
@@ -203,7 +249,7 @@ export default function TakeExamPage({ params }: { params: { id: string } }) {
         totalQuestions={exam.questions.length}
         correctAnswers={correctAnswers}
         timeSpent={submissionResult.timeSpent}
-        questionResults={submissionResult.detailedReport}
+        questionResults={questionResults}
         aiFeedback={submissionResult.aiFeedback || ""}
         calculatedPercentile={submissionResult.calculatedPercentile || 50}
       />
@@ -221,43 +267,59 @@ export default function TakeExamPage({ params }: { params: { id: string } }) {
         answeredCount={Object.keys(answers).length}
       />
 
-      <div className="pt-24 pb-32 px-4 lg:px-8 flex">
-        <div className="flex-1 max-w-4xl mx-auto">
-          <QuestionCard
-            question={exam.questions[currentQuestion]}
-            selectedAnswer={answers[exam.questions[currentQuestion].id]}
-            onAnswerSelect={(answer) => handleAnswer(exam.questions[currentQuestion].id, answer)}
-            isFlagged={flaggedQuestions.has(exam.questions[currentQuestion].id)}
+      <div className="mx-auto max-w-6xl px-4 pt-24 pb-32 lg:px-8">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="flex-1">
+            <QuestionCard
+              question={exam.questions[currentQuestion]}
+              questionNumber={currentQuestion + 1}
+              selectedAnswer={answers[exam.questions[currentQuestion].id] ?? null}
+              onAnswerSelect={(answer) => handleAnswer(exam.questions[currentQuestion].id, answer)}
+              isFlagged={flaggedQuestions.has(exam.questions[currentQuestion].id)}
+              onToggleFlag={toggleFlag}
+            />
+          </div>
+
+          <ExamSidebar
+            variant="inline"
+            questions={exam.questions}
+            currentQuestion={currentQuestion}
+            timeRemaining={timeRemaining}
+            answeredQuestionIds={answeredQuestionIds}
+            flaggedQuestionIds={flaggedQuestions}
+            onGoToQuestion={setCurrentQuestion}
             onToggleFlag={toggleFlag}
+            isFlagged={flaggedQuestions.has(exam.questions[currentQuestion].id)}
+            onSubmit={() => setShowSubmitModal(true)}
           />
         </div>
-
-        <ExamSidebar
-          questions={exam.questions}
-          currentQuestion={currentQuestion}
-          totalQuestions={exam.questions.length}
-          timeRemaining={timeRemaining}
-          answeredQuestionIds={new Set(Object.keys(answers))}
-          flaggedQuestionIds={flaggedQuestions}
-          onGoToQuestion={setCurrentQuestion}
-          onToggleFlag={toggleFlag}
-          isFlagged={flaggedQuestions.has(exam.questions[currentQuestion].id)}
-          onSubmit={() => setShowSubmitModal(true)}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
       </div>
 
       <ExamNavigation
         questions={exam.questions}
         currentQuestion={currentQuestion}
         totalQuestions={exam.questions.length}
-        answeredQuestionIds={new Set(Object.keys(answers))}
+        answeredQuestionIds={answeredQuestionIds}
         flaggedQuestionIds={flaggedQuestions}
         onPrevious={() => setCurrentQuestion((prev) => Math.max(0, prev - 1))}
         onNext={() => setCurrentQuestion((prev) => Math.min(exam.questions.length - 1, prev + 1))}
         onGoToQuestion={setCurrentQuestion}
         onSubmit={() => setShowSubmitModal(true)}
+        onOpenSidebar={() => setSidebarOpen(true)}
+      />
+
+      <ExamSidebar
+        questions={exam.questions}
+        currentQuestion={currentQuestion}
+        timeRemaining={timeRemaining}
+        answeredQuestionIds={answeredQuestionIds}
+        flaggedQuestionIds={flaggedQuestions}
+        onGoToQuestion={setCurrentQuestion}
+        onToggleFlag={toggleFlag}
+        isFlagged={flaggedQuestions.has(exam.questions[currentQuestion].id)}
+        onSubmit={() => setShowSubmitModal(true)}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <SubmitConfirmModal

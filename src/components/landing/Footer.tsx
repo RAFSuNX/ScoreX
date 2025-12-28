@@ -1,4 +1,5 @@
 import { Github, Twitter, Linkedin } from "lucide-react";
+import Link from "next/link";
 
 const footerLinks = {
   product: [
@@ -39,11 +40,11 @@ export const Footer = () => {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-16">
           {/* Brand column */}
           <div className="col-span-2">
-            <a href="/" className="flex items-center mb-6 group">
+            <Link href="/" className="flex items-center mb-6 group">
               <span className="text-2xl font-black tracking-tight">
                 Score<span className="gradient-text">X</span>
               </span>
-            </a>
+            </Link>
             <p className="text-muted-foreground max-w-xs mb-6 leading-relaxed">
               AI-powered learning platform that helps you master any subject with personalized exams and real-time feedback.
             </p>

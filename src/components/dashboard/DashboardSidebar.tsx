@@ -24,11 +24,11 @@ export const DashboardSidebar = () => {
       
       <div className="relative flex flex-col h-full p-4">
         {/* Logo - text only brand */}
-        <a href="/" className="flex items-center px-3 py-4 mb-6">
+        <Link href="/" className="flex items-center px-3 py-4 mb-6">
           <span className="text-2xl font-black tracking-tight">
             Score<span className="gradient-text">X</span>
           </span>
-        </a>
+        </Link>
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1">

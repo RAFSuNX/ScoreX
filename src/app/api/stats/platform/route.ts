@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     // Get platform-wide statistics
-    const [totalUsers, totalExams, totalQuestionsCount] = await Promise.all([
+    const [totalUsers, totalExams, examsWithQuestions] = await Promise.all([
       // Count total users
       prisma.user.count(),
 
@@ -20,8 +22,8 @@ export async function GET() {
     ]);
 
     // Calculate total questions
-    const totalQuestions = totalQuestionsCount.reduce((sum, exam) => {
-      return sum + (exam.questions as any[]).length;
+    const totalQuestions = examsWithQuestions.reduce((sum, exam) => {
+      return sum + exam.questions.length;
     }, 0);
 
     // Format numbers for display
@@ -42,7 +44,7 @@ export async function GET() {
       rawTotalExams: totalExams,
       rawTotalQuestions: totalQuestions,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching platform stats:', error);
     return NextResponse.json(
       { error: 'Failed to fetch platform statistics' },

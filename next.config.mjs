@@ -1,14 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  typescript: {
-    // Skip type checking during build - type errors should be caught in development
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    // Skip ESLint during build
-    ignoreDuringBuilds: true,
-  },
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client', 'bcryptjs', 'pdf.js-extract', 'canvas'],
   },

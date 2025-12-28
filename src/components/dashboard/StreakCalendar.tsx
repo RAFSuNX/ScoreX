@@ -11,6 +11,15 @@ interface CalendarDay {
   exams: number;
 }
 
+interface AttemptSummary {
+  completedAt: string | null;
+}
+
+interface StreakInfo {
+  currentStreak: number;
+  longestStreak: number;
+}
+
 const getActivityColor = (level: number) => {
   switch (level) {
     case 0: return "bg-muted/30";
@@ -24,15 +33,15 @@ const getActivityColor = (level: number) => {
 
 export const StreakCalendar = () => {
   const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
-  const [streakData, setStreakData] = useState<any>(null);
+  const [streakData, setStreakData] = useState<StreakInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [overviewRes, attemptsRes] = await Promise.all([
-          axios.get('/api/stats/overview'),
-          axios.get('/api/stats/attempts'),
+          axios.get<StreakInfo>('/api/stats/overview'),
+          axios.get<AttemptSummary[]>('/api/stats/attempts'),
         ]);
 
         setStreakData({
@@ -47,7 +56,7 @@ export const StreakCalendar = () => {
 
         // Create a map of dates to exam counts
         const dateMap = new Map<string, number>();
-        attempts.forEach((attempt: any) => {
+        attempts.forEach((attempt) => {
           if (attempt.completedAt) {
             const date = new Date(attempt.completedAt);
             const dateKey = date.toDateString();

@@ -1,47 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { getAuthSession } from '@/lib/auth';
 
-interface StatsSummary {
-  totalExams: number;
-  averageScore: number;
-  totalTimeSpent: number; // in seconds
-}
-
-async function getStatsForPeriod(userId: string, startDate: Date, endDate: Date): Promise<StatsSummary> {
-  const exams = await prisma.exam.findMany({
-    where: {
-      userId,
-      createdAt: {
-        gte: startDate,
-        lte: endDate,
-      },
-    },
-    select: { id: true }, // Only need ID to count
-  });
-
-  const attempts = await prisma.examAttempt.findMany({
-    where: {
-      userId,
-      examId: {
-        in: exams.map(e => e.id),
-      },
-      completedAt: {
-        gte: startDate,
-        lte: endDate,
-      },
-    },
-    select: { percentage: true, timeSpent: true },
-  });
-
-  const totalExams = exams.length;
-  const totalAttempts = attempts.length;
-  const averageScore = totalAttempts > 0 ? attempts.reduce((acc, a) => acc + (a.percentage || 0), 0) / totalAttempts : 0;
-  const totalTimeSpent = attempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0); // Sum of timeSpent in seconds
-
-  return { totalExams, averageScore, totalTimeSpent };
-}
+export const dynamic = "force-dynamic";
 
 function calculateChange(current: number, previous: number): string {
   if (previous === 0) {
@@ -53,9 +14,9 @@ function calculateChange(current: number, previous: number): string {
   return `${sign}${percentage.toFixed(0)}%`;
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAuthSession();
 
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -98,12 +59,24 @@ export async function GET(req: Request) {
     });
 
     // Helper to filter exams/attempts by date
-    const filterByDate = (items: any[], startDate: Date, endDate: Date, dateField: string) => {
-        return items.filter(item => {
-            const itemDate = new Date(item[dateField]);
-            return itemDate >= startDate && itemDate <= endDate;
-        });
-    };
+const filterExamsByDate = <T extends { createdAt: Date }>(
+  items: T[],
+  startDate: Date,
+  endDate: Date
+) => {
+  return items.filter((item) => item.createdAt >= startDate && item.createdAt <= endDate);
+};
+
+const filterAttemptsByDate = <T extends { completedAt: Date | null }>(
+  items: T[],
+  startDate: Date,
+  endDate: Date
+) => {
+  return items.filter((item) => {
+    if (!item.completedAt) return false;
+    return item.completedAt >= startDate && item.completedAt <= endDate;
+  });
+};
 
     // Calculate overall stats for displaying absolute values
     const totalExams = allExams.length;
@@ -112,21 +85,21 @@ export async function GET(req: Request) {
     const totalTimeSpent = allAttempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0);
 
     // Stats for current week
-    const currentWeekExams = filterByDate(allExams, currentWeekStart, now, 'createdAt').length;
-    const currentWeekAttempts = filterByDate(allAttempts, currentWeekStart, now, 'completedAt');
+    const currentWeekExams = filterExamsByDate(allExams, currentWeekStart, now).length;
+    const currentWeekAttempts = filterAttemptsByDate(allAttempts, currentWeekStart, now);
     const currentWeekTimeSpent = currentWeekAttempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0);
 
     // Stats for previous week
-    const previousWeekExams = filterByDate(allExams, previousWeekStart, previousWeekEnd, 'createdAt').length;
-    const previousWeekAttempts = filterByDate(allAttempts, previousWeekStart, previousWeekEnd, 'completedAt');
+    const previousWeekExams = filterExamsByDate(allExams, previousWeekStart, previousWeekEnd).length;
+    const previousWeekAttempts = filterAttemptsByDate(allAttempts, previousWeekStart, previousWeekEnd);
     const previousWeekTimeSpent = previousWeekAttempts.reduce((acc, a) => acc + (a.timeSpent || 0), 0);
 
     // Stats for current month
-    const currentMonthAttempts = filterByDate(allAttempts, currentMonthStart, now, 'completedAt');
+    const currentMonthAttempts = filterAttemptsByDate(allAttempts, currentMonthStart, now);
     const currentMonthAverageScore = currentMonthAttempts.length > 0 ? currentMonthAttempts.reduce((acc, a) => acc + (a.percentage || 0), 0) / currentMonthAttempts.length : 0;
 
     // Stats for previous month
-    const previousMonthAttempts = filterByDate(allAttempts, previousMonthStart, previousMonthEnd, 'completedAt');
+    const previousMonthAttempts = filterAttemptsByDate(allAttempts, previousMonthStart, previousMonthEnd);
     const previousMonthAverageScore = previousMonthAttempts.length > 0 ? previousMonthAttempts.reduce((acc, a) => acc + (a.percentage || 0), 0) / previousMonthAttempts.length : 0;
 
 
@@ -147,7 +120,7 @@ export async function GET(req: Request) {
       totalTimeSpentChange: calculateChange(currentWeekTimeSpent, previousWeekTimeSpent),
     }, { status: 200 });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(error);
     return NextResponse.json({ message: 'An unexpected error occurred.' }, { status: 500 });
   }

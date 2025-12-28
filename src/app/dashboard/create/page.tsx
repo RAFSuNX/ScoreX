@@ -92,9 +92,15 @@ export default function CreateExamPage() {
       // 3. Now that generation is complete, trigger the modal's onComplete handler
       handleGenerationComplete(newExamId);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to generate exam", error);
-      const errorMessage = error.response?.data?.message || "Failed to generate exam. Please try again.";
+      let errorMessage = "Failed to generate exam. Please try again.";
+      if (axios.isAxiosError(error)) {
+        const data = error.response?.data as { message?: string } | undefined;
+        if (data?.message) {
+          errorMessage = data.message;
+        }
+      }
       toast({
         variant: "destructive",
         title: "Generation Failed",

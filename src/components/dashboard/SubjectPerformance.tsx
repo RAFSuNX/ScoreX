@@ -1,6 +1,7 @@
 "use client";
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import type { TooltipProps } from "recharts";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,14 +12,33 @@ const getScoreColor = (score: number) => {
   return "hsl(240, 20%, 40%)"; // muted - needs work
 };
 
+interface SubjectPerformanceResponse {
+  subject: string;
+  averageScore: number;
+}
+
+interface SubjectChartSlice {
+  name: string;
+  value: number;
+  score: number;
+  fill: string;
+  [key: string]: string | number;
+}
+
+const tooltipFormatter: TooltipProps<number, string>["formatter"] = (_value, name, item) => {
+  const payload = item?.payload as SubjectChartSlice | undefined;
+  const scoreText = payload ? `${payload.score.toFixed(0)}% avg` : "0% avg";
+  return [scoreText, String(name ?? "")];
+};
+
 export const SubjectPerformance = () => {
-  const [subjectData, setSubjectData] = useState<any[] | null>(null);
+  const [subjectData, setSubjectData] = useState<SubjectPerformanceResponse[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchSubjectData = async () => {
       try {
-        const response = await axios.get('/api/stats/subjects');
+        const response = await axios.get<SubjectPerformanceResponse[]>('/api/stats/subjects');
         setSubjectData(response.data);
       } catch (error) {
         console.error("Failed to fetch subject performance", error);
@@ -51,7 +71,7 @@ export const SubjectPerformance = () => {
     );
   }
 
-  const chartData = subjectData.map(s => ({
+  const chartData: SubjectChartSlice[] = subjectData.map(s => ({
     name: s.subject,
     value: 1, // Each slice is of equal size for now
     score: s.averageScore || 0,
@@ -90,10 +110,7 @@ export const SubjectPerformance = () => {
                 borderRadius: "12px",
                 padding: "12px",
               }}
-              formatter={(value, name, props) => [
-                `${(props.payload.score || 0).toFixed(0)}% avg`,
-                String(name || '')
-              ]}
+              formatter={tooltipFormatter}
             />
           </PieChart>
         </ResponsiveContainer>

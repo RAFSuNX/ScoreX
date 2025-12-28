@@ -5,13 +5,25 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import Link from "next/link";
 
+interface ExamAttemptSummary {
+  percentage: number | null;
+}
+
+interface RecentExam {
+  id: string;
+  subject: string;
+  createdAt: string;
+  questions: { id: string }[];
+  attempts: ExamAttemptSummary[];
+}
+
 const getScoreStyle = (score: number) => {
   if (score >= 85) return "text-primary bg-primary/10";
   if (score >= 70) return "text-muted-foreground bg-muted/50";
   return "text-destructive bg-destructive/10";
 };
 
-export const RecentExams = ({ exams }: { exams: any[] }) => {
+export const RecentExams = ({ exams }: { exams: RecentExam[] }) => {
   return (
     <div className="morphic-card p-6">
       {/* Header */}

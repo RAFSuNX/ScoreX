@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { AttemptStatus } from '@prisma/client';
+import { getAuthSession } from '@/lib/auth';
+import { AttemptStatus, Prisma } from '@prisma/client';
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAuthSession();
 
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -18,7 +19,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const examId = url.searchParams.get('examId');
 
-    const whereClause: any = {
+    const whereClause: Prisma.ExamAttemptWhereInput = {
       userId: userId,
       status: AttemptStatus.IN_PROGRESS,
     };
@@ -55,7 +56,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(response, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching in-progress exam:', error);
     return NextResponse.json({ message: 'An unexpected error occurred.' }, { status: 500 });
   }

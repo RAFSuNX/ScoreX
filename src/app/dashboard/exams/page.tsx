@@ -1,12 +1,12 @@
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { FileText, Clock, TrendingUp, Play, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import type { Session } from "next-auth";
 
 export default async function MyExamsPage() {
-  const session = await getServerSession(authOptions);
+  const session = (await getAuthSession()) as Session | null;
 
   if (!session || !session.user) {
     return null;

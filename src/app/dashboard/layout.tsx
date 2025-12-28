@@ -1,15 +1,15 @@
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { MobileNav } from "@/components/dashboard/MobileNav";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import type { Session } from "next-auth";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
+  const session = (await getAuthSession()) as Session | null;
 
   if (!session || !session.user) {
     redirect("/login");

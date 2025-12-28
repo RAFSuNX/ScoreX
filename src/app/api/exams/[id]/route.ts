@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export const dynamic = "force-dynamic";
+
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
     const examId = params.id;
 
@@ -28,8 +30,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     // However, for the take-exam page, we need to show the questions.
     // We will strip the correct answers from the questions before sending them to the client.
     // Also map database field names to frontend expected names
-    const questionsForStudent = exam.questions.map(q => {
-      const { correctAnswer, explanation, questionText, questionType, options, ...rest } = q;
+    const questionsForStudent = exam.questions.map((q) => {
+      const { questionText, questionType, options, id, points, order } = q;
 
       // Convert options object {A: "...", B: "...", C: "...", D: "..."} to array ["...", "...", "...", "..."]
       const optionsArray = options && typeof options === 'object' && !Array.isArray(options)
@@ -37,7 +39,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         : options;
 
       return {
-        ...rest,
+        id,
+        points,
+        order,
         text: questionText,
         type: questionType.toLowerCase().replace(/_/g, '-'), // Convert MULTIPLE_CHOICE to multiple-choice
         options: optionsArray,
@@ -48,7 +52,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 
     return NextResponse.json(examForStudent, { status: 200 });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(error);
     return NextResponse.json({ message: 'An unexpected error occurred.' }, { status: 500 });
   }

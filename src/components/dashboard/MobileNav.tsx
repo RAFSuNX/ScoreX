@@ -23,11 +23,11 @@ export const MobileNav = () => {
       <header className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-4">
         <div className="absolute inset-0 bg-background/80 backdrop-blur-xl border-b border-border/50" />
         
-        <a href="/" className="relative flex items-center">
+        <Link href="/" className="relative flex items-center">
           <span className="text-xl font-black tracking-tight">
             Score<span className="gradient-text">X</span>
           </span>
-        </a>
+        </Link>
         
         <button
           onClick={() => setIsOpen(!isOpen)}

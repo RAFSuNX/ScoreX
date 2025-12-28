@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { getAuthSession } from '@/lib/auth';
 import { AttemptStatus } from '@prisma/client';
+
+export const dynamic = "force-dynamic";
 
 const saveProgressSchema = z.object({
   inProgressAnswers: z.record(z.string(), z.string()).optional(),
@@ -12,9 +13,11 @@ const saveProgressSchema = z.object({
   flaggedQuestions: z.array(z.string()).optional(),
 });
 
+type SaveProgressPayload = z.infer<typeof saveProgressSchema>;
+
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAuthSession();
 
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -27,7 +30,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ message: 'Exam ID is required' }, { status: 400 });
     }
 
-    const body = await req.json();
+    const body = (await req.json()) as SaveProgressPayload;
     const { inProgressAnswers, currentTimeSpent, currentQuestionIndex, flaggedQuestions } = saveProgressSchema.parse(body);
 
     // Find an existing IN_PROGRESS attempt for this user and exam
@@ -74,7 +77,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json(response, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
     }

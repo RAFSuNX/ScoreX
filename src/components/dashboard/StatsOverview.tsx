@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, TrendingUp, Flame, Clock } from "lucide-react";
+import { FileText, TrendingUp, Flame, Clock, LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from 'axios';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,16 +39,35 @@ const AnimatedNumber = ({ value, suffix }: { value: number; suffix: string }) =>
   );
 };
 
+interface OverviewApiResponse {
+  totalExams: number;
+  averageScore: number;
+  currentStreak: number;
+  longestStreak: number;
+  totalTimeSpent: number;
+  totalExamsChange: string;
+  averageScoreChange: string;
+  totalTimeSpentChange: string;
+}
+
+interface OverviewStat {
+  label: string;
+  value: number;
+  icon: LucideIcon;
+  suffix: string;
+  change: string;
+}
+
 export const StatsOverview = () => {
-  const [stats, setStats] = useState<any[] | null>(null);
+  const [stats, setStats] = useState<OverviewStat[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await axios.get('/api/stats/overview');
+        const response = await axios.get<OverviewApiResponse>('/api/stats/overview');
         const data = response.data;
-        const formattedStats = [
+        const formattedStats: OverviewStat[] = [
           { 
             label: "Total Exams", 
             value: data.totalExams, 

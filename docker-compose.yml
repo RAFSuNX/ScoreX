@@ -13,9 +13,6 @@ services:
       - NEXTAUTH_SECRET=super-secret-key-change-in-production-abc123xyz789
     depends_on:
       - postgres
-    volumes:
-      - .:/app
-      - /app/node_modules
 
   postgres:
     image: postgres:14-alpine

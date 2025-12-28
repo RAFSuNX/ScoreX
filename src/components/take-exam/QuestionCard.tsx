@@ -13,6 +13,7 @@ export interface Question {
 
 interface QuestionCardProps {
   question: Question;
+  questionNumber: number;
   selectedAnswer: string | null;
   onAnswerSelect: (answer: string) => void;
   isFlagged: boolean;
@@ -21,6 +22,7 @@ interface QuestionCardProps {
 
 const QuestionCard = ({
   question,
+  questionNumber,
   selectedAnswer,
   onAnswerSelect,
   isFlagged,
@@ -46,7 +48,7 @@ const QuestionCard = ({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-muted-foreground">
-              Q{question.id}
+              Question {questionNumber}
             </span>
             <span className="px-3 py-1 rounded-full text-xs font-medium bg-accent/20 text-accent border border-accent/30">
               {getTypeBadge(question.type)}
@@ -59,7 +61,7 @@ const QuestionCard = ({
             <button
               onClick={onToggleFlag}
               className={cn(
-                "p-2 rounded-lg transition-all",
+                "p-2 rounded-lg transition-colors",
                 isFlagged
                   ? "bg-yellow-500/20 text-yellow-500 border border-yellow-500/30"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
@@ -83,7 +85,7 @@ const QuestionCard = ({
                 key={index}
                 onClick={() => onAnswerSelect(option)}
                 className={cn(
-                  "w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left",
+                  "w-full flex items-center gap-4 p-4 rounded-2xl border transition-colors text-left",
                   selectedAnswer === option
                     ? "bg-primary/20 border-primary/50 text-foreground shadow-lg shadow-primary/10"
                     : "bg-muted/30 border-border/50 text-foreground hover:bg-muted/50 hover:border-border"
@@ -91,7 +93,7 @@ const QuestionCard = ({
               >
                 <span
                   className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center font-semibold text-sm transition-all",
+                    "w-10 h-10 rounded-xl flex items-center justify-center font-semibold text-sm transition-colors",
                     selectedAnswer === option
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground"
@@ -116,7 +118,7 @@ const QuestionCard = ({
                 key={option}
                 onClick={() => onAnswerSelect(option)}
                 className={cn(
-                  "p-6 rounded-2xl border text-center font-semibold text-lg transition-all",
+                  "p-6 rounded-2xl border text-center font-semibold text-lg transition-colors",
                   selectedAnswer === option
                     ? "bg-primary/20 border-primary/50 text-foreground shadow-lg shadow-primary/10"
                     : "bg-muted/30 border-border/50 text-foreground hover:bg-muted/50 hover:border-border"

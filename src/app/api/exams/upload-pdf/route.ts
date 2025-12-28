@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { getAuthSession } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { PDFExtract } from 'pdf.js-extract';
+import type { Session } from 'next-auth';
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  let session: any;
+  let session: Session | null = null;
   try {
-    session = await getServerSession(authOptions);
+    session = await getAuthSession();
 
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -55,7 +57,7 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ extractedText, sourcePdfUrl: dummySourcePdfUrl }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error during PDF upload and extraction', error, { userId: session?.user?.id });
     if (error instanceof Error) {
         return NextResponse.json({ message: `PDF extraction failed: ${error.message}` }, { status: 500 });

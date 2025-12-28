@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
+export const dynamic = "force-dynamic";
+
 const signupSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters long'),
   email: z.string().email('Invalid email address'),
@@ -16,9 +18,11 @@ const signupSchema = z.object({
     .regex(/[^a-zA-Z0-9]/, 'Password must contain at least one special character'),
 });
 
+type SignupPayload = z.infer<typeof signupSchema>;
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as SignupPayload;
     const { name, email, password } = signupSchema.parse(body);
 
     const existingUser = await prisma.user.findUnique({
@@ -31,7 +35,7 @@ export async function POST(req: Request) {
 
     const passwordHash = await hash(password, 12);
 
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         name,
         email,
@@ -41,7 +45,7 @@ export async function POST(req: Request) {
 
     logger.info('User created successfully', { email });
     return NextResponse.json({ message: 'User created successfully' }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       logger.warn('Signup validation failed', { issues: error.issues });
       return NextResponse.json({ message: error.issues[0].message }, { status: 400 });

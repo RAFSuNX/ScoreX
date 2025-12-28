@@ -3,12 +3,12 @@ import { StreakCalendar } from "@/components/dashboard/StreakCalendar";
 import { SubjectPerformance } from "@/components/dashboard/SubjectPerformance";
 import { RecentExams } from "@/components/dashboard/RecentExams";
 import { QuickActions } from "@/components/dashboard/QuickActions";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { Session } from "next-auth";
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions);
+  const session = (await getAuthSession()) as Session | null;
   // The layout already protects this page, but we need the session to fetch data
   if (!session || !session.user) {
     return null; // Or a more specific error component
@@ -41,6 +41,14 @@ export default async function DashboardPage() {
     }
   });
 
+  const recentExams = exams.map((exam) => ({
+    id: exam.id,
+    subject: exam.subject,
+    createdAt: exam.createdAt.toISOString(),
+    questions: exam.questions,
+    attempts: exam.attempts,
+  }));
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Page header */}
@@ -70,7 +78,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Recent Exams */}
-      <RecentExams exams={exams} />
+      <RecentExams exams={recentExams} />
       
       {/* Quick Actions */}
       <QuickActions />
