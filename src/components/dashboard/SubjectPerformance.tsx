@@ -54,8 +54,8 @@ export const SubjectPerformance = () => {
   const chartData = subjectData.map(s => ({
     name: s.subject,
     value: 1, // Each slice is of equal size for now
-    score: s.averageScore,
-    fill: getScoreColor(s.averageScore),
+    score: s.averageScore || 0,
+    fill: getScoreColor(s.averageScore || 0),
   }));
 
   return (
@@ -91,7 +91,7 @@ export const SubjectPerformance = () => {
                 padding: "12px",
               }}
               formatter={(value, name, props) => [
-                `${props.payload.score.toFixed(0)}% avg`,
+                `${(props.payload.score || 0).toFixed(0)}% avg`,
                 String(name || '')
               ]}
             />
@@ -111,11 +111,11 @@ export const SubjectPerformance = () => {
               <span className="text-sm text-foreground">{subject.subject}</span>
             </div>
             <div className="flex items-center gap-3">
-              <span 
+              <span
                 className="text-sm font-bold"
-                style={{ color: getScoreColor(subject.averageScore) }}
+                style={{ color: getScoreColor(subject.averageScore || 0) }}
               >
-                {subject.averageScore.toFixed(0)}%
+                {(subject.averageScore || 0).toFixed(0)}%
               </span>
             </div>
           </div>

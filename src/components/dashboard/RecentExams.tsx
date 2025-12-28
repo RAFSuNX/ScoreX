@@ -49,8 +49,8 @@ export const RecentExams = ({ exams }: { exams: any[] }) => {
                   {exam.subject}
                 </td>
                 <td className="py-4 text-center">
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${getScoreStyle(exam.attempts.length > 0 ? exam.attempts[0].percentage : 0)}`}>
-                    {exam.attempts.length > 0 ? `${exam.attempts[0].percentage.toFixed(0)}%` : 'N/A'}
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${getScoreStyle(exam.attempts.length > 0 && exam.attempts[0].percentage !== null ? exam.attempts[0].percentage : 0)}`}>
+                    {exam.attempts.length > 0 && exam.attempts[0].percentage !== null ? `${exam.attempts[0].percentage.toFixed(0)}%` : 'N/A'}
                   </span>
                 </td>
                 <td className="py-4 text-center text-sm text-muted-foreground hidden sm:table-cell">

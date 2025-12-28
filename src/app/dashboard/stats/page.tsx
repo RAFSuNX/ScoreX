@@ -52,14 +52,14 @@ export default function StatsPage() {
   }
 
   const avgScore = attempts.length > 0
-    ? attempts.reduce((sum, a) => sum + a.percentage, 0) / attempts.length
+    ? attempts.reduce((sum, a) => sum + (a.percentage || 0), 0) / attempts.length
     : 0;
 
-  const totalTimeSpent = attempts.reduce((sum, a) => sum + a.timeSpent, 0);
+  const totalTimeSpent = attempts.reduce((sum, a) => sum + (a.timeSpent || 0), 0);
 
   const performanceData = attempts.slice(0, 7).reverse().map((attempt, i) => ({
     name: `Attempt ${i + 1}`,
-    score: attempt.percentage,
+    score: attempt.percentage || 0,
   }));
 
   type SubjectStats = { count: number; totalScore: number };
@@ -69,7 +69,7 @@ export default function StatsPage() {
       acc[subject] = { count: 0, totalScore: 0 };
     }
     acc[subject].count++;
-    acc[subject].totalScore += attempt.percentage;
+    acc[subject].totalScore += (attempt.percentage || 0);
     return acc;
   }, {} as Record<string, SubjectStats>);
 
@@ -210,8 +210,8 @@ export default function StatsPage() {
                         <p className="text-sm text-muted-foreground">{attempt.exam.subject}</p>
                       </div>
                       <div className="text-right">
-                        <p className={`font-bold ${attempt.percentage >= 70 ? 'text-green-500' : 'text-yellow-500'}`}>
-                          {attempt.percentage.toFixed(0)}%
+                        <p className={`font-bold ${(attempt.percentage || 0) >= 70 ? 'text-green-500' : 'text-yellow-500'}`}>
+                          {(attempt.percentage || 0).toFixed(0)}%
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(attempt.completedAt).toLocaleDateString()}
