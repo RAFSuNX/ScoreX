@@ -69,18 +69,18 @@ export const Pricing = () => {
       <div className="container relative z-10 px-4">
         {/* Section header */}
         <div className="text-center mb-20">
-          <div className="inline-flex items-center gap-3 mb-6">
+          <div className="inline-flex items-center gap-3 mb-6 animate-fadeIn">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary" />
             <span className="text-sm font-bold tracking-widest text-primary uppercase">Pricing</span>
             <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary" />
           </div>
-          
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-6">
+
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-6 animate-fadeInUp" style={{animationDelay: '0.1s', opacity: 0}}>
             <span className="text-foreground">Simple</span>
             <span className="gradient-text"> Pricing</span>
           </h2>
-          
-          <p className="mx-auto max-w-xl text-lg text-muted-foreground">
+
+          <p className="mx-auto max-w-xl text-lg text-muted-foreground animate-fadeInUp" style={{animationDelay: '0.2s', opacity: 0}}>
             Choose the plan that fits your learning journey. No hidden fees.
           </p>
         </div>
@@ -91,7 +91,8 @@ export const Pricing = () => {
             {tiers.map((tier, index) => (
               <div
                 key={tier.name}
-                className={`${tier.featured ? 'tier-card-featured lg:-translate-y-6' : 'tier-card'} p-8 flex flex-col relative`}
+                className={`${tier.featured ? 'tier-card-featured lg:-translate-y-6' : 'tier-card'} p-8 flex flex-col relative animate-scaleIn`}
+                style={{animationDelay: `${0.3 + index * 0.15}s`, opacity: 0}}
               >
                 {/* Featured badge */}
                 {tier.featured && (
@@ -103,14 +104,19 @@ export const Pricing = () => {
                   </div>
                 )}
                 
-                {/* Tier icon */}
-                <div className="mb-6">
-                  <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl ${
-                    tier.featured 
-                      ? 'bg-primary' 
-                      : 'bg-muted'
+                {/* Premium background icon graphic */}
+                <div className="absolute top-0 right-0 w-40 h-40 -mr-10 -mt-10 opacity-[0.02]">
+                  <tier.icon className="w-full h-full text-primary" strokeWidth={0.5} />
+                </div>
+
+                {/* Tier icon with premium treatment */}
+                <div className="relative mb-6">
+                  <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl transition-all ${
+                    tier.featured
+                      ? 'bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/20'
+                      : 'bg-gradient-to-br from-muted to-muted/50'
                   }`}>
-                    <tier.icon className={`h-6 w-6 ${tier.featured ? 'text-primary-foreground' : 'text-foreground'}`} />
+                    <tier.icon className={`h-6 w-6 ${tier.featured ? 'text-primary-foreground' : 'text-foreground'}`} strokeWidth={2} />
                   </div>
                 </div>
                 

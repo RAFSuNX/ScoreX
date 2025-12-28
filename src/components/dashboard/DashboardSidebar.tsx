@@ -23,7 +23,7 @@ export const DashboardSidebar = () => {
       <div className="absolute inset-0 bg-background/80 backdrop-blur-xl border-r border-border/50" />
       
       <div className="relative flex flex-col h-full p-4">
-        {/* Logo */}
+        {/* Logo - text only brand */}
         <a href="/" className="flex items-center px-3 py-4 mb-6">
           <span className="text-2xl font-black tracking-tight">
             Score<span className="gradient-text">X</span>

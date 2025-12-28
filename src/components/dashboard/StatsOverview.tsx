@@ -104,26 +104,31 @@ export const StatsOverview = () => {
       {stats?.map((stat, index) => (
         <div
           key={stat.label}
-          className="morphic-card p-6 group hover:-translate-y-1 transition-all duration-300"
+          className="morphic-card p-6 group hover:-translate-y-1 transition-all duration-300 relative overflow-hidden"
           style={{ animationDelay: `${index * 100}ms` }}
         >
-          {/* Icon */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 border border-primary/20">
-              <stat.icon className="h-5 w-5 text-primary" />
+          {/* Premium background icon graphic */}
+          <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+            <stat.icon className="w-full h-full text-primary" strokeWidth={1} />
+          </div>
+
+          {/* Icon and change badge */}
+          <div className="relative flex items-center justify-between mb-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/10 group-hover:border-primary/20 transition-all">
+              <stat.icon className="h-5 w-5 text-primary" strokeWidth={2} />
             </div>
             <div className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
               {stat.change}
             </div>
           </div>
-          
+
           {/* Value */}
-          <div className="mb-1">
+          <div className="relative mb-1">
             <AnimatedNumber value={stat.value} suffix={stat.suffix} />
           </div>
-          
+
           {/* Label */}
-          <p className="text-sm text-muted-foreground font-medium">{stat.label}</p>
+          <p className="relative text-sm text-muted-foreground font-medium">{stat.label}</p>
         </div>
       ))}
     </div>

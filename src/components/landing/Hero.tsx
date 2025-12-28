@@ -3,16 +3,42 @@
 import { Button } from "@/components/ui/button";
 import { Zap, Users, FileCheck, Rocket, ArrowRight } from "lucide-react";
 import Link from "next/link";
-
-const stats = [
-  { value: "10K+", label: "Students", icon: Users },
-  { value: "50K+", label: "Exams Created", icon: FileCheck },
-  { value: "95%", label: "Success Rate", icon: Rocket },
-];
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 export const Hero = () => {
+  const [stats, setStats] = useState([
+    { value: "...", label: "Total Users", icon: Users },
+    { value: "...", label: "Exams Created", icon: FileCheck },
+    { value: "...", label: "Total Questions", icon: Rocket },
+  ]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await axios.get('/api/stats/platform');
+        if (response.data) {
+          setStats([
+            { value: response.data.totalUsers || "0", label: "Total Users", icon: Users },
+            { value: response.data.totalExams || "0", label: "Exams Created", icon: FileCheck },
+            { value: response.data.totalQuestions || "0", label: "Total Questions", icon: Rocket },
+          ]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch platform stats:', error);
+        // Keep default values on error
+        setStats([
+          { value: "100+", label: "Total Users", icon: Users },
+          { value: "500+", label: "Exams Created", icon: FileCheck },
+          { value: "5K+", label: "Total Questions", icon: Rocket },
+        ]);
+      }
+    };
+
+    fetchStats();
+  }, []);
   return (
-    <section className="relative min-h-screen overflow-hidden">
+    <section className="relative h-[100dvh] w-[100dvw] overflow-hidden">
       {/* Unique background composition */}
       <div className="absolute inset-0 bg-background" />
       
@@ -44,65 +70,71 @@ export const Hero = () => {
       <div className="absolute top-48 right-[20%] w-6 h-6 rounded-full border-2 border-primary/15 animate-float-delayed" />
       <div className="absolute bottom-48 left-[10%] w-3 h-3 bg-primary/20 rotate-45 animate-float-slow" />
 
-      <div className="container relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-24">
-
-        {/* Main headline - asymmetric layout */}
-        <div className="max-w-5xl text-center mb-8">
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[0.9] mb-6">
-            <span className="block text-foreground">Learn</span>
-            <span className="block gradient-text">Smarter</span>
-            <span className="block text-foreground text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium mt-2 text-muted-foreground">
-              Not Harder
-            </span>
-          </h1>
-          
-          <p className="mx-auto max-w-xl text-lg md:text-xl text-muted-foreground leading-relaxed">
-            AI-generated exams that adapt to you. Track progress. Master subjects.
-            The future of learning is personal.
-          </p>
+      {/* Background text graphic - "Learn Smarter" */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+        <div className="text-[20vw] font-black tracking-tighter leading-none text-foreground/[0.02] select-none">
+          <div className="whitespace-nowrap">LEARN</div>
+          <div className="whitespace-nowrap gradient-text opacity-[0.03]">SMARTER</div>
         </div>
+      </div>
 
-        {/* CTAs with unique styling */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 mb-20">
-          <Link href="/signup">
-            <Button variant="hero" size="lg" className="group">
-              Start Learning Free
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Button>
-          </Link>
-          <Button variant="hero-outline" size="lg" onClick={() => window.scrollTo({ top: document.getElementById('features')?.offsetTop || 0, behavior: 'smooth' })}>
-            Watch Demo
-          </Button>
-        </div>
+      <div className="container relative z-10 flex h-full flex-col items-center justify-center px-4">
 
-        {/* Unique stat cards - asymmetric grid */}
-        <div className="w-full max-w-4xl">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {stats.map((stat, index) => (
-              <div
-                key={stat.label}
-                className={`stat-card p-6 sm:p-8 ${
-                  index === 1 ? 'sm:-translate-y-4' : ''
-                } ${
-                  index === 0 ? 'animate-float' : 
-                  index === 1 ? 'animate-float-delayed' : 
-                  'animate-float-slow'
-                }`}
-              >
-                {/* Icon with unique treatment */}
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="relative">
-                    <div className="absolute inset-0 rounded-2xl bg-primary/20 blur-lg" />
-                    <div className="relative flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20">
-                      <stat.icon className="h-5 w-5 text-primary" />
+        {/* Two-column horizontal layout */}
+        <div className="w-full max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+
+            {/* Left column - Content */}
+            <div className="text-center lg:text-left">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.9] mb-6">
+                <span className="block text-foreground animate-fadeInUp" style={{animationDelay: '0.1s', opacity: 0}}>Learn</span>
+                <span className="block gradient-text animate-fadeInUp" style={{animationDelay: '0.2s', opacity: 0}}>Smarter</span>
+                <span className="block text-foreground text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium mt-2 text-muted-foreground animate-fadeInUp" style={{animationDelay: '0.3s', opacity: 0}}>
+                  Not Harder
+                </span>
+              </h1>
+
+              <p className="max-w-xl lg:max-w-none text-base md:text-lg text-muted-foreground leading-relaxed mb-8 animate-fadeInUp" style={{animationDelay: '0.4s', opacity: 0}}>
+                AI-generated exams that adapt to you. Track progress. Master subjects.
+                The future of learning is personal.
+              </p>
+
+              {/* CTA */}
+              <div className="flex flex-col sm:flex-row lg:flex-row items-center lg:items-start gap-4 animate-fadeInUp" style={{animationDelay: '0.5s', opacity: 0}}>
+                <Link href="/signup">
+                  <Button variant="hero" size="lg" className="group">
+                    Start Learning Free
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Right column - Redesigned stat cards */}
+            <div className="space-y-4 animate-fadeInUp" style={{animationDelay: '0.6s', opacity: 0}}>
+              {stats.map((stat, index) => (
+                <div
+                  key={stat.label}
+                  className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-background/50 to-background/30 backdrop-blur-sm p-5 hover:border-primary/30 transition-all duration-300 hover:translate-x-2"
+                >
+                  {/* Background icon */}
+                  <div className="absolute right-0 top-0 w-24 h-24 -mr-6 -mt-6 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                    <stat.icon className="w-full h-full text-primary" strokeWidth={1} />
+                  </div>
+
+                  <div className="relative flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <stat.icon className="h-8 w-8 text-primary flex-shrink-0" strokeWidth={2} />
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">{stat.label}</p>
+                        <p className="text-2xl font-black text-foreground mt-0.5">{stat.value}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-                
-                <div className="number-badge mb-1">{stat.value}</div>
-                <p className="text-muted-foreground font-medium">{stat.label}</p>
-              </div>
-            ))}
+              ))}
+            </div>
+
           </div>
         </div>
       </div>
