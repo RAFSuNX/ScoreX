@@ -1,30 +1,15 @@
 "use client";
 
 import { Flame, Trophy } from "lucide-react";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Generate mock data for 90 days
-const generateCalendarData = () => {
-  const data = [];
-  const today = new Date();
-  
-  for (let i = 89; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    
-    // Random activity level (0-4)
-    const activity = Math.random() > 0.3 ? Math.floor(Math.random() * 5) : 0;
-    
-    data.push({
-      date,
-      activity,
-      exams: activity,
-    });
-  }
-  
-  return data;
-};
-
-const calendarData = generateCalendarData();
+interface CalendarDay {
+  date: Date;
+  activity: number;
+  exams: number;
+}
 
 const getActivityColor = (level: number) => {
   switch (level) {
@@ -38,8 +23,77 @@ const getActivityColor = (level: number) => {
 };
 
 export const StreakCalendar = () => {
+  const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
+  const [streakData, setStreakData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [overviewRes, attemptsRes] = await Promise.all([
+          axios.get('/api/stats/overview'),
+          axios.get('/api/stats/attempts'),
+        ]);
+
+        setStreakData({
+          currentStreak: overviewRes.data.currentStreak || 0,
+          longestStreak: overviewRes.data.longestStreak || 0,
+        });
+
+        // Generate calendar data based on real attempts
+        const attempts = attemptsRes.data;
+        const data: CalendarDay[] = [];
+        const today = new Date();
+
+        // Create a map of dates to exam counts
+        const dateMap = new Map<string, number>();
+        attempts.forEach((attempt: any) => {
+          if (attempt.completedAt) {
+            const date = new Date(attempt.completedAt);
+            const dateKey = date.toDateString();
+            dateMap.set(dateKey, (dateMap.get(dateKey) || 0) + 1);
+          }
+        });
+
+        // Generate 90 days of data
+        for (let i = 89; i >= 0; i--) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          const dateKey = date.toDateString();
+          const exams = dateMap.get(dateKey) || 0;
+
+          // Calculate activity level (0-4) based on exams completed
+          let activity = 0;
+          if (exams >= 4) activity = 4;
+          else if (exams === 3) activity = 3;
+          else if (exams === 2) activity = 2;
+          else if (exams === 1) activity = 1;
+
+          data.push({ date, activity, exams });
+        }
+
+        setCalendarData(data);
+      } catch (error) {
+        console.error('Failed to fetch streak data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="morphic-card p-6">
+        <Skeleton className="h-8 w-3/4 mb-6" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    );
+  }
+
   // Split into weeks
-  const weeks: typeof calendarData[] = [];
+  const weeks: CalendarDay[][] = [];
   for (let i = 0; i < calendarData.length; i += 7) {
     weeks.push(calendarData.slice(i, i + 7));
   }
@@ -52,18 +106,18 @@ export const StreakCalendar = () => {
           <h3 className="text-lg font-bold text-foreground mb-1">Activity Streak</h3>
           <p className="text-sm text-muted-foreground">Last 90 days of learning</p>
         </div>
-        
+
         <div className="flex items-center gap-4">
           {/* Current streak */}
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/20">
             <Flame className="h-5 w-5 text-primary" />
-            <span className="font-bold text-primary">12 days</span>
+            <span className="font-bold text-primary">{streakData?.currentStreak || 0} days</span>
           </div>
-          
+
           {/* Longest streak */}
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/50">
             <Trophy className="h-5 w-5 text-muted-foreground" />
-            <span className="font-medium text-muted-foreground">Best: 28</span>
+            <span className="font-medium text-muted-foreground">Best: {streakData?.longestStreak || 0}</span>
           </div>
         </div>
       </div>
