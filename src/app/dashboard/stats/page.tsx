@@ -10,17 +10,20 @@ export default function StatsPage() {
   const { data: session } = useSession();
   const [userStats, setUserStats] = useState<any>(null);
   const [attempts, setAttempts] = useState<any[]>([]);
+  const [streak, setStreak] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, attemptsRes] = await Promise.all([
+        const [statsRes, attemptsRes, overviewRes] = await Promise.all([
           axios.get('/api/stats/user'),
           axios.get('/api/stats/attempts'),
+          axios.get('/api/stats/overview'),
         ]);
         setUserStats(statsRes.data);
         setAttempts(attemptsRes.data);
+        setStreak({ currentStreak: overviewRes.data.currentStreak || 0 });
       } catch (error) {
         console.error('Failed to fetch stats:', error);
       } finally {
@@ -150,7 +153,7 @@ export default function StatsPage() {
             </div>
             <span className="text-sm text-muted-foreground">Study Streak</span>
           </div>
-          <p className="text-3xl font-bold">0 days</p>
+          <p className="text-3xl font-bold">{streak?.currentStreak || 0} days</p>
         </div>
       </div>
 

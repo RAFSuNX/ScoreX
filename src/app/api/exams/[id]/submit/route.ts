@@ -141,6 +141,112 @@ Please provide personalized feedback for the student. The feedback should be enc
         });
     }
 
+    // Update UserStats
+    const isPassed = percentage >= 70; // Passing threshold
+    const userStats = await prisma.userStats.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (userStats) {
+      // Calculate new average score
+      const newTotalExams = userStats.totalExams + 1;
+      const newAvgScore = ((userStats.avgScore * userStats.totalExams) + percentage) / newTotalExams;
+
+      // Get subject stats
+      const subjectStats = (userStats.subjectStats as any) || {};
+      const subjectKey = exam.subject;
+      if (!subjectStats[subjectKey]) {
+        subjectStats[subjectKey] = { count: 0, totalScore: 0, avgScore: 0 };
+      }
+      subjectStats[subjectKey].count += 1;
+      subjectStats[subjectKey].totalScore += percentage;
+      subjectStats[subjectKey].avgScore = subjectStats[subjectKey].totalScore / subjectStats[subjectKey].count;
+
+      await prisma.userStats.update({
+        where: { userId: session.user.id },
+        data: {
+          totalExams: newTotalExams,
+          examsPassed: isPassed ? userStats.examsPassed + 1 : userStats.examsPassed,
+          examsFailed: !isPassed ? userStats.examsFailed + 1 : userStats.examsFailed,
+          avgScore: newAvgScore,
+          totalTimeSpent: userStats.totalTimeSpent + timeSpent,
+          subjectStats: subjectStats,
+        },
+      });
+    } else {
+      // Create new user stats
+      const subjectStats = {
+        [exam.subject]: {
+          count: 1,
+          totalScore: percentage,
+          avgScore: percentage,
+        },
+      };
+
+      await prisma.userStats.create({
+        data: {
+          userId: session.user.id,
+          totalExams: 1,
+          examsPassed: isPassed ? 1 : 0,
+          examsFailed: !isPassed ? 1 : 0,
+          avgScore: percentage,
+          totalTimeSpent: timeSpent,
+          subjectStats: subjectStats,
+        },
+      });
+    }
+
+    // Update Streak
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const streak = await prisma.streak.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (streak) {
+      const lastActiveDate = new Date(streak.lastActiveDate);
+      lastActiveDate.setHours(0, 0, 0, 0);
+
+      const daysDiff = Math.floor((today.getTime() - lastActiveDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      let newCurrentStreak = streak.currentStreak;
+      if (daysDiff === 0) {
+        // Same day, no change to streak
+      } else if (daysDiff === 1) {
+        // Consecutive day, increment streak
+        newCurrentStreak = streak.currentStreak + 1;
+      } else {
+        // Streak broken, reset to 1
+        newCurrentStreak = 1;
+      }
+
+      const newLongestStreak = Math.max(newCurrentStreak, streak.longestStreak);
+
+      await prisma.streak.update({
+        where: { userId: session.user.id },
+        data: {
+          currentStreak: newCurrentStreak,
+          longestStreak: newLongestStreak,
+          lastActiveDate: today,
+          totalExams: streak.totalExams + 1,
+          totalQuestions: streak.totalQuestions + exam.questions.length,
+        },
+      });
+    } else {
+      // Create new streak
+      await prisma.streak.create({
+        data: {
+          userId: session.user.id,
+          currentStreak: 1,
+          longestStreak: 1,
+          lastActiveDate: today,
+          totalExams: 1,
+          totalQuestions: exam.questions.length,
+        },
+      });
+    }
+
     return NextResponse.json({ ...examAttempt, detailedReport, calculatedPercentile }, { status: 200 });
 
   } catch (error: any) {

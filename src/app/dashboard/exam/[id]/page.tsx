@@ -204,6 +204,8 @@ export default function TakeExamPage({ params }: { params: { id: string } }) {
         correctAnswers={correctAnswers}
         timeSpent={submissionResult.timeSpent}
         questionResults={submissionResult.detailedReport}
+        aiFeedback={submissionResult.aiFeedback || ""}
+        calculatedPercentile={submissionResult.calculatedPercentile || 50}
       />
     );
   }

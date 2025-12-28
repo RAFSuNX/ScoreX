@@ -138,7 +138,7 @@ export default async function MyExamsPage() {
                       <span>{new Date(exam.createdAt).toLocaleDateString()}</span>
                     </div>
 
-                    {hasAttempt && latestAttempt && (
+                    {hasAttempt && latestAttempt && latestAttempt.percentage !== null && (
                       <div className="flex items-center gap-3 text-sm">
                         <span className="text-muted-foreground">Latest Score:</span>
                         <span className={`font-bold ${latestAttempt.percentage >= 70 ? 'text-green-500' : 'text-yellow-500'}`}>

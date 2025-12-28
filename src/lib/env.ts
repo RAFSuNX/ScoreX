@@ -17,8 +17,9 @@ const envSchema = z.object({
     .min(1, 'OPENROUTER_API_KEY is required')
     .startsWith('sk-or-v1-', 'OPENROUTER_API_KEY must be a valid API key'),
 
-  // Optional: AI Model
-  AI_MODEL_GENERATION: z.string().optional().default('openai/gpt-3.5-turbo'),
+  // AI Models
+  AI_MODEL_GENERATION: z.string().optional().default('openai/gpt-4o-mini'),
+  AI_MODEL_GRADING: z.string().optional().default('openai/gpt-4o-mini'),
 
   // Node Environment
   NODE_ENV: z
