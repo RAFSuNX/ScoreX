@@ -70,8 +70,8 @@ spec:
                 # Wait for rollout to complete
                 kubectl rollout status deployment/scorex -n scorex --timeout=10m
 
-                echo "Deployment updated. Next check in 10 minutes..."
-                sleep 600  # Check every 10 minutes
+                echo "Deployment updated. Next check in 1 minute..."
+                sleep 60  # Check every 1 minute
               done
           resources:
             requests:
