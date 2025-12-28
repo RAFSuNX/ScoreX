@@ -95,8 +95,8 @@ export const Hero = () => {
               </h1>
 
               <p className="max-w-xl lg:max-w-none text-base md:text-lg text-muted-foreground leading-relaxed mb-8 animate-fadeInUp" style={{animationDelay: '0.4s', opacity: 0}}>
-                AI-generated exams that adapt to you. Track progress. Master subjects.
-                The future of learning is personal.
+                Master any subject with AI-powered practice exams. Track your progress,
+                identify weaknesses, and accelerate your learning journey.
               </p>
 
               {/* CTA */}
