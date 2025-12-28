@@ -65,20 +65,18 @@ export const StepSourceSelection = ({ onNext }: StepSourceSelectionProps) => {
         {/* Option A: Upload PDF */}
         <div
           onClick={() => setSourceType("pdf")}
-          className={`morphic-card p-6 cursor-pointer transition-all duration-300 hover:-translate-y-1 ${
+          className={`morphic-card p-6 cursor-pointer transition-all duration-300 hover:-translate-y-1 group relative overflow-hidden ${
             sourceType === "pdf"
               ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
               : ""
           }`}
         >
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 border border-primary/20">
-              <FileUp className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-bold text-foreground">Upload PDF</h3>
-              <p className="text-sm text-muted-foreground">Max 10MB</p>
-            </div>
+          <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+            <FileUp className="w-full h-full text-primary" strokeWidth={0.5} />
+          </div>
+          <div className="mb-4 relative">
+            <h3 className="font-bold text-foreground">Upload PDF</h3>
+            <p className="text-sm text-muted-foreground">Max 10MB</p>
           </div>
 
           {sourceType === "pdf" && (
@@ -120,9 +118,7 @@ export const StepSourceSelection = ({ onNext }: StepSourceSelectionProps) => {
               ) : (
                 <div className="bg-muted/30 rounded-xl p-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                      <FileText className="h-5 w-5 text-primary" />
-                    </div>
+                    <FileText className="h-6 w-6 text-primary flex-shrink-0" strokeWidth={2} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">
                         {file.name}
@@ -161,20 +157,18 @@ export const StepSourceSelection = ({ onNext }: StepSourceSelectionProps) => {
         {/* Option B: Describe Topic */}
         <div
           onClick={() => setSourceType("topic")}
-          className={`morphic-card p-6 cursor-pointer transition-all duration-300 hover:-translate-y-1 ${
+          className={`morphic-card p-6 cursor-pointer transition-all duration-300 hover:-translate-y-1 group relative overflow-hidden ${
             sourceType === "topic"
               ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
               : ""
           }`}
         >
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 border border-primary/20">
-              <Edit3 className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-bold text-foreground">Describe Topic</h3>
-              <p className="text-sm text-muted-foreground">Write what to study</p>
-            </div>
+          <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+            <Edit3 className="w-full h-full text-primary" strokeWidth={0.5} />
+          </div>
+          <div className="mb-4 relative">
+            <h3 className="font-bold text-foreground">Describe Topic</h3>
+            <p className="text-sm text-muted-foreground">Write what to study</p>
           </div>
 
           {sourceType === "topic" && (

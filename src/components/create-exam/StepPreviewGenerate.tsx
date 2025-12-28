@@ -48,9 +48,7 @@ export const StepPreviewGenerate = ({
         <div className="morphic-card p-6 space-y-5">
           {/* Source */}
           <div className="flex items-start gap-4">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex-shrink-0">
-              <FileText className="h-5 w-5 text-primary" />
-            </div>
+            <FileText className="h-6 w-6 text-primary flex-shrink-0" strokeWidth={2} />
             <div className="flex-1 min-w-0">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
                 Source Material
