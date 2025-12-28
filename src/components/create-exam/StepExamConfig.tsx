@@ -102,7 +102,7 @@ export const StepExamConfig = ({ onNext, onBack }: StepExamConfigProps) => {
         </div>
 
         {/* Subject Dropdown */}
-        <div className="morphic-card p-4">
+        <div className="morphic-card p-4 overflow-visible">
           <label className="block text-sm font-medium text-foreground mb-2">
             Subject
           </label>
