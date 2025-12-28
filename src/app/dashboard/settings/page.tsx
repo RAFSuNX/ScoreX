@@ -67,9 +67,7 @@ export default function SettingsPage() {
 
       <div className="morphic-card p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <User className="h-5 w-5 text-primary" />
-          </div>
+          <User className="h-6 w-6 text-primary" strokeWidth={2} />
           <div>
             <h2 className="text-xl font-bold">Profile Information</h2>
             <p className="text-sm text-muted-foreground">Update your personal details</p>
@@ -97,9 +95,7 @@ export default function SettingsPage() {
 
       <div className="morphic-card p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-lg bg-yellow-500/10">
-            <Lock className="h-5 w-5 text-yellow-500" />
-          </div>
+          <Lock className="h-6 w-6 text-yellow-500" strokeWidth={2} />
           <div>
             <h2 className="text-xl font-bold">Change Password</h2>
             <p className="text-sm text-muted-foreground">Update your password regularly for security</p>
@@ -128,9 +124,7 @@ export default function SettingsPage() {
 
       <div className="morphic-card p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-lg bg-green-500/10">
-            <Bell className="h-5 w-5 text-green-500" />
-          </div>
+          <Bell className="h-6 w-6 text-green-500" strokeWidth={2} />
           <div>
             <h2 className="text-xl font-bold">Notifications</h2>
             <p className="text-sm text-muted-foreground">Manage how you receive updates</p>
@@ -158,9 +152,7 @@ export default function SettingsPage() {
 
       <div className="morphic-card p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-lg bg-purple-500/10">
-            <Palette className="h-5 w-5 text-purple-500" />
-          </div>
+          <Palette className="h-6 w-6 text-purple-500" strokeWidth={2} />
           <div>
             <h2 className="text-xl font-bold">Appearance</h2>
             <p className="text-sm text-muted-foreground">Customize your interface</p>

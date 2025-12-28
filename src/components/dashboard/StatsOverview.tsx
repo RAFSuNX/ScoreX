@@ -114,9 +114,7 @@ export const StatsOverview = () => {
 
           {/* Icon and change badge */}
           <div className="relative flex items-center justify-between mb-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/10 group-hover:border-primary/20 transition-all">
-              <stat.icon className="h-5 w-5 text-primary" strokeWidth={2} />
-            </div>
+            <stat.icon className="h-8 w-8 text-primary group-hover:scale-110 transition-transform duration-300" strokeWidth={2} />
             <div className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
               {stat.change}
             </div>

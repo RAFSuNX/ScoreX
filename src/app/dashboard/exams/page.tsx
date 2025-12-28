@@ -101,9 +101,7 @@ export default async function MyExamsPage() {
       {/* Exams List */}
       {exams.length === 0 ? (
         <div className="text-center py-16">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-            <FileText className="h-8 w-8 text-muted-foreground" />
-          </div>
+          <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" strokeWidth={1.5} />
           <h3 className="text-xl font-bold mb-2">No exams yet</h3>
           <p className="text-muted-foreground mb-6">Create your first AI-generated exam to get started</p>
           <Link href="/dashboard/create">

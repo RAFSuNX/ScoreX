@@ -94,9 +94,7 @@ export default function StatsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="stat-card p-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <BarChart3 className="h-5 w-5 text-primary" />
-            </div>
+            <BarChart3 className="h-6 w-6 text-primary" strokeWidth={2} />
             <span className="text-sm text-muted-foreground">Total Exams</span>
           </div>
           <p className="text-3xl font-bold">{userStats?.totalExams || 0}</p>
@@ -104,9 +102,7 @@ export default function StatsPage() {
 
         <div className="stat-card p-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-green-500/10">
-              <TrendingUp className="h-5 w-5 text-green-500" />
-            </div>
+            <TrendingUp className="h-6 w-6 text-green-500" strokeWidth={2} />
             <span className="text-sm text-muted-foreground">Average Score</span>
           </div>
           <p className="text-3xl font-bold">{avgScore.toFixed(1)}%</p>
@@ -114,9 +110,7 @@ export default function StatsPage() {
 
         <div className="stat-card p-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-blue-500/10">
-              <Award className="h-5 w-5 text-blue-500" />
-            </div>
+            <Award className="h-6 w-6 text-blue-500" strokeWidth={2} />
             <span className="text-sm text-muted-foreground">Exams Passed</span>
           </div>
           <p className="text-3xl font-bold">{userStats?.examsPassed || 0}</p>
@@ -124,9 +118,7 @@ export default function StatsPage() {
 
         <div className="stat-card p-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-yellow-500/10">
-              <Target className="h-5 w-5 text-yellow-500" />
-            </div>
+            <Target className="h-6 w-6 text-yellow-500" strokeWidth={2} />
             <span className="text-sm text-muted-foreground">Pass Rate</span>
           </div>
           <p className="text-3xl font-bold">
@@ -138,9 +130,7 @@ export default function StatsPage() {
 
         <div className="stat-card p-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-purple-500/10">
-              <Clock className="h-5 w-5 text-purple-500" />
-            </div>
+            <Clock className="h-6 w-6 text-purple-500" strokeWidth={2} />
             <span className="text-sm text-muted-foreground">Time Spent</span>
           </div>
           <p className="text-3xl font-bold">{Math.round(totalTimeSpent / 60)}h</p>
@@ -148,9 +138,7 @@ export default function StatsPage() {
 
         <div className="stat-card p-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-orange-500/10">
-              <Zap className="h-5 w-5 text-orange-500" />
-            </div>
+            <Zap className="h-6 w-6 text-orange-500" strokeWidth={2} />
             <span className="text-sm text-muted-foreground">Study Streak</span>
           </div>
           <p className="text-3xl font-bold">{streak?.currentStreak || 0} days</p>
