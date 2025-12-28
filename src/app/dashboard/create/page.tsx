@@ -84,13 +84,12 @@ export default function CreateExamPage() {
       const newExamId = createResponse.data.id;
       setExamId(newExamId);
 
-      // 2. Trigger AI generation and wait for it to complete
+      // 2. Trigger AI generation (async, returns immediately)
       await axios.post('/api/ai/generate', {
         examId: newExamId,
       });
 
-      // 3. Now that generation is complete, trigger the modal's onComplete handler
-      handleGenerationComplete(newExamId);
+      // Modal will now poll for status and call handleGenerationComplete when done
 
     } catch (error: unknown) {
       console.error("Failed to generate exam", error);
@@ -107,13 +106,26 @@ export default function CreateExamPage() {
         description: errorMessage,
       });
       setIsGenerating(false);
+      setExamId(null);
     }
   };
 
-  const handleGenerationComplete = (id: string) => {
+  const handleGenerationComplete = () => {
+    if (examId) {
+      setIsGenerating(false);
+      // Navigate to the newly created exam page
+      router.push(`/dashboard/exam/${examId}`);
+    }
+  };
+
+  const handleGenerationError = (error: string) => {
     setIsGenerating(false);
-    // Navigate to the newly created exam page
-    router.push(`/dashboard/exam/${id}`);
+    setExamId(null);
+    toast({
+      variant: "destructive",
+      title: "Generation Failed",
+      description: error,
+    });
   };
 
   return (
@@ -145,7 +157,12 @@ export default function CreateExamPage() {
           />
         )}
       </div>
-      <GeneratingModal isOpen={isGenerating} onComplete={() => handleGenerationComplete(examId!)} />
+      <GeneratingModal
+        isOpen={isGenerating}
+        examId={examId}
+        onComplete={handleGenerationComplete}
+        onError={handleGenerationError}
+      />
     </div>
   );
 }

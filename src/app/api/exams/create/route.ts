@@ -77,10 +77,10 @@ export async function POST(req: Request) {
     const body = (await req.json()) as CreateExamPayload;
     const { title, description, sourceType, sourceText, sourcePdfUrl, difficulty, subject, aiModel } = createExamSchema.parse(body);
 
-    if (sourceType === 'DESCRIPTION' && !sourceText) {
-      return NextResponse.json({ message: 'Source text is required for description-based exams' }, { status: 400 });
+    if (!sourceText) {
+      return NextResponse.json({ message: 'Source text is required (extracted from PDF or provided as description)' }, { status: 400 });
     }
-    // New validation for PDF type: ensure sourcePdfUrl is present
+    // For PDF type: ensure sourcePdfUrl is present
     if (sourceType === 'PDF' && !sourcePdfUrl) {
         return NextResponse.json({ message: 'Source PDF URL is required for PDF-based exams' }, { status: 400 });
     }
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
         title,
         description,
         sourceType,
-        sourceText: sourceType === 'DESCRIPTION' ? sourceText : null,
+        sourceText: sourceText || null, // Store sourceText for both PDF (extracted text) and DESCRIPTION
         sourcePdfUrl: sourceType === 'PDF' ? sourcePdfUrl : null, // Conditionally save sourcePdfUrl
         difficulty,
         subject,

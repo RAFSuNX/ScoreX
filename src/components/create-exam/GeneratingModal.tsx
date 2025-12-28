@@ -1,46 +1,77 @@
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
+import axios from "axios";
 
 interface GeneratingModalProps {
   isOpen: boolean;
+  examId: string | null;
   onComplete: () => void;
+  onError: (error: string) => void;
 }
 
-const steps = [
+const stepLabels = [
   "Reading content",
   "Analyzing key concepts",
   "Generating questions",
   "Review & finalize",
 ];
 
-export const GeneratingModal = ({ isOpen, onComplete }: GeneratingModalProps) => {
-  const [currentStep, setCurrentStep] = useState(0);
+export const GeneratingModal = ({ isOpen, examId, onComplete, onError }: GeneratingModalProps) => {
+  const [currentStep, setCurrentStep] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isOpen) {
-      setCurrentStep(0);
-      return;
+    if (!isOpen || !examId) {
+      // Reset state when modal closes
+      return () => {
+        setCurrentStep(null);
+        setError(null);
+      };
     }
 
-    const intervals = [1500, 2000, 2500, 1500];
-    let stepIndex = 0;
+    const pollStatus = async () => {
+      try {
+        const response = await axios.get(`/api/ai/generate/status/${examId}`);
+        const data = response.data;
 
-    const advanceStep = () => {
-      if (stepIndex < steps.length - 1) {
-        stepIndex++;
-        setCurrentStep(stepIndex);
-        setTimeout(advanceStep, intervals[stepIndex]);
-      } else {
-        setTimeout(() => {
-          onComplete();
-        }, 1000);
+        setCurrentStep(data.currentStep);
+
+        if (data.status === 'COMPLETED') {
+          clearInterval(pollingInterval);
+          setTimeout(() => {
+            onComplete();
+          }, 1000);
+        } else if (data.status === 'FAILED') {
+          clearInterval(pollingInterval);
+          const errorMessage = data.error || 'Generation failed. Please try again.';
+          setError(errorMessage);
+          setTimeout(() => {
+            onError(errorMessage);
+          }, 2000);
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+        // Continue polling even on error - might be temporary network issue
       }
     };
 
-    setTimeout(advanceStep, intervals[0]);
-  }, [isOpen, onComplete]);
+    // Start polling immediately, then every 2 seconds
+    pollStatus();
+    const pollingInterval = setInterval(pollStatus, 2000);
+
+    return () => {
+      clearInterval(pollingInterval);
+    };
+  }, [isOpen, examId, onComplete, onError]);
 
   if (!isOpen) return null;
+
+  const getCurrentStepIndex = () => {
+    if (!currentStep) return -1;
+    return stepLabels.indexOf(currentStep);
+  };
+
+  const currentStepIndex = getCurrentStepIndex();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -49,30 +80,38 @@ export const GeneratingModal = ({ isOpen, onComplete }: GeneratingModalProps) =>
 
       {/* Modal */}
       <div className="relative morphic-card p-8 w-full max-w-md animate-scale-in">
-        {/* Spinner */}
+        {/* Spinner or Error Icon */}
         <div className="flex justify-center mb-8">
-          <div className="relative">
-            <div className="w-20 h-20 rounded-full border-4 border-muted/30" />
-            <div className="absolute inset-0 w-20 h-20 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+          {error ? (
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertCircle className="w-10 h-10 text-destructive" />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full border-4 border-muted/30" />
+              <div className="absolute inset-0 w-20 h-20 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Title */}
         <h3 className="text-xl font-bold text-foreground text-center mb-2">
-          AI is analyzing your content...
+          {error ? 'Generation Failed' : 'AI is analyzing your content...'}
         </h3>
         <p className="text-sm text-muted-foreground text-center mb-8">
-          This may take a moment
+          {error ? error : 'This may take a moment'}
         </p>
 
         {/* Steps */}
         <div className="space-y-3">
-          {steps.map((step, index) => {
-            const isCompleted = index < currentStep;
-            const isActive = index === currentStep;
+          {stepLabels.map((step, index) => {
+            const isCompleted = currentStepIndex > index;
+            const isActive = currentStepIndex === index;
 
             return (
               <div

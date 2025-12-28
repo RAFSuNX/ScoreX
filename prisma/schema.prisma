@@ -22,20 +22,24 @@ model User {
 }
 
 model Exam {
-  id            String        @id @default(cuid())
-  title         String
-  description   String?
-  userId        String
-  user          User          @relation(fields: [userId], references: [id])
-  sourceType    SourceType
-  sourcePdfUrl  String?
-  sourceText    String?       @db.Text
-  difficulty    Difficulty    @default(MEDIUM)
-  subject       String
-  questions     Question[]
-  attempts      ExamAttempt[]
-  createdAt     DateTime      @default(now())
-  aiModel       String
+  id               String           @id @default(cuid())
+  title            String
+  description      String?
+  userId           String
+  user             User             @relation(fields: [userId], references: [id])
+  sourceType       SourceType
+  sourcePdfUrl     String?
+  sourceText       String?          @db.Text
+  difficulty       Difficulty       @default(MEDIUM)
+  subject          String
+  questions        Question[]
+  attempts         ExamAttempt[]
+  createdAt        DateTime         @default(now())
+  aiModel          String
+  generationStatus GenerationStatus @default(PENDING)
+  generationError  String?          @db.Text
+  currentStep      String?
+  updatedAt        DateTime         @updatedAt
 }
 
 model Question {
@@ -123,4 +127,11 @@ enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
   SHORT_ANSWER
+}
+
+enum GenerationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
