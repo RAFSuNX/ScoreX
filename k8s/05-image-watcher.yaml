@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: image-watcher
+  namespace: scorex
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: image-watcher
+  namespace: scorex
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "patch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: image-watcher
+  namespace: scorex
+subjects:
+  - kind: ServiceAccount
+    name: image-watcher
+    namespace: scorex
+roleRef:
+  kind: Role
+  name: image-watcher
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-watcher
+  namespace: scorex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: image-watcher
+  template:
+    metadata:
+      labels:
+        app: image-watcher
+    spec:
+      serviceAccountName: image-watcher
+      containers:
+        - name: watcher
+          image: bitnami/kubectl:latest
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting image watcher for scorex deployment..."
+
+              # Initial wait to avoid immediate restart
+              sleep 60
+
+              while true; do
+                echo "Checking for new image at $(date)..."
+
+                # Trigger rollout restart to pull latest image
+                # With imagePullPolicy: Always, this will pull the newest :latest tag
+                kubectl rollout restart deployment/scorex -n scorex
+
+                # Wait for rollout to complete
+                kubectl rollout status deployment/scorex -n scorex --timeout=10m
+
+                echo "Deployment updated. Next check in 10 minutes..."
+                sleep 600  # Check every 10 minutes
+              done
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
