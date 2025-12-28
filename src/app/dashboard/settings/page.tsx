@@ -65,13 +65,13 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage your account settings and preferences</p>
       </div>
 
-      <div className="morphic-card p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <User className="h-6 w-6 text-primary" strokeWidth={2} />
-          <div>
-            <h2 className="text-xl font-bold">Profile Information</h2>
-            <p className="text-sm text-muted-foreground">Update your personal details</p>
-          </div>
+      <div className="morphic-card p-6 group relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+          <User className="w-full h-full text-primary" strokeWidth={0.5} />
+        </div>
+        <div className="mb-6 relative">
+          <h2 className="text-xl font-bold">Profile Information</h2>
+          <p className="text-sm text-muted-foreground">Update your personal details</p>
         </div>
 
         <div className="space-y-4">
@@ -93,13 +93,13 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="morphic-card p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Lock className="h-6 w-6 text-yellow-500" strokeWidth={2} />
-          <div>
-            <h2 className="text-xl font-bold">Change Password</h2>
-            <p className="text-sm text-muted-foreground">Update your password regularly for security</p>
-          </div>
+      <div className="morphic-card p-6 group relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+          <Lock className="w-full h-full text-yellow-500" strokeWidth={0.5} />
+        </div>
+        <div className="mb-6 relative">
+          <h2 className="text-xl font-bold">Change Password</h2>
+          <p className="text-sm text-muted-foreground">Update your password regularly for security</p>
         </div>
 
         <div className="space-y-4">
@@ -122,13 +122,13 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="morphic-card p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Bell className="h-6 w-6 text-green-500" strokeWidth={2} />
-          <div>
-            <h2 className="text-xl font-bold">Notifications</h2>
-            <p className="text-sm text-muted-foreground">Manage how you receive updates</p>
-          </div>
+      <div className="morphic-card p-6 group relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+          <Bell className="w-full h-full text-green-500" strokeWidth={0.5} />
+        </div>
+        <div className="mb-6 relative">
+          <h2 className="text-xl font-bold">Notifications</h2>
+          <p className="text-sm text-muted-foreground">Manage how you receive updates</p>
         </div>
 
         <div className="space-y-4">
@@ -150,13 +150,13 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="morphic-card p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Palette className="h-6 w-6 text-purple-500" strokeWidth={2} />
-          <div>
-            <h2 className="text-xl font-bold">Appearance</h2>
-            <p className="text-sm text-muted-foreground">Customize your interface</p>
-          </div>
+      <div className="morphic-card p-6 group relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+          <Palette className="w-full h-full text-purple-500" strokeWidth={0.5} />
+        </div>
+        <div className="mb-6 relative">
+          <h2 className="text-xl font-bold">Appearance</h2>
+          <p className="text-sm text-muted-foreground">Customize your interface</p>
         </div>
 
         <div className="flex items-center gap-4">

@@ -92,56 +92,56 @@ export default function StatsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="stat-card p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <BarChart3 className="h-6 w-6 text-primary" strokeWidth={2} />
-            <span className="text-sm text-muted-foreground">Total Exams</span>
+        <div className="stat-card p-6 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+            <BarChart3 className="w-full h-full text-primary" strokeWidth={0.5} />
           </div>
-          <p className="text-3xl font-bold">{userStats?.totalExams || 0}</p>
+          <span className="relative text-sm text-muted-foreground mb-2 block">Total Exams</span>
+          <p className="relative text-3xl font-bold">{userStats?.totalExams || 0}</p>
         </div>
 
-        <div className="stat-card p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <TrendingUp className="h-6 w-6 text-green-500" strokeWidth={2} />
-            <span className="text-sm text-muted-foreground">Average Score</span>
+        <div className="stat-card p-6 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+            <TrendingUp className="w-full h-full text-green-500" strokeWidth={0.5} />
           </div>
-          <p className="text-3xl font-bold">{avgScore.toFixed(1)}%</p>
+          <span className="relative text-sm text-muted-foreground mb-2 block">Average Score</span>
+          <p className="relative text-3xl font-bold">{avgScore.toFixed(1)}%</p>
         </div>
 
-        <div className="stat-card p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Award className="h-6 w-6 text-blue-500" strokeWidth={2} />
-            <span className="text-sm text-muted-foreground">Exams Passed</span>
+        <div className="stat-card p-6 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+            <Award className="w-full h-full text-blue-500" strokeWidth={0.5} />
           </div>
-          <p className="text-3xl font-bold">{userStats?.examsPassed || 0}</p>
+          <span className="relative text-sm text-muted-foreground mb-2 block">Exams Passed</span>
+          <p className="relative text-3xl font-bold">{userStats?.examsPassed || 0}</p>
         </div>
 
-        <div className="stat-card p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Target className="h-6 w-6 text-yellow-500" strokeWidth={2} />
-            <span className="text-sm text-muted-foreground">Pass Rate</span>
+        <div className="stat-card p-6 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+            <Target className="w-full h-full text-yellow-500" strokeWidth={0.5} />
           </div>
-          <p className="text-3xl font-bold">
+          <span className="relative text-sm text-muted-foreground mb-2 block">Pass Rate</span>
+          <p className="relative text-3xl font-bold">
             {userStats && userStats.totalExams > 0
               ? ((userStats.examsPassed / userStats.totalExams) * 100).toFixed(0)
               : 0}%
           </p>
         </div>
 
-        <div className="stat-card p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Clock className="h-6 w-6 text-purple-500" strokeWidth={2} />
-            <span className="text-sm text-muted-foreground">Time Spent</span>
+        <div className="stat-card p-6 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+            <Clock className="w-full h-full text-purple-500" strokeWidth={0.5} />
           </div>
-          <p className="text-3xl font-bold">{Math.round(totalTimeSpent / 60)}h</p>
+          <span className="relative text-sm text-muted-foreground mb-2 block">Time Spent</span>
+          <p className="relative text-3xl font-bold">{Math.round(totalTimeSpent / 60)}h</p>
         </div>
 
-        <div className="stat-card p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Zap className="h-6 w-6 text-orange-500" strokeWidth={2} />
-            <span className="text-sm text-muted-foreground">Study Streak</span>
+        <div className="stat-card p-6 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+            <Zap className="w-full h-full text-orange-500" strokeWidth={0.5} />
           </div>
-          <p className="text-3xl font-bold">{streak?.currentStreak || 0} days</p>
+          <span className="relative text-sm text-muted-foreground mb-2 block">Study Streak</span>
+          <p className="relative text-3xl font-bold">{streak?.currentStreak || 0} days</p>
         </div>
       </div>
 

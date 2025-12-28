@@ -107,26 +107,25 @@ export const StatsOverview = () => {
           className="morphic-card p-6 group hover:-translate-y-1 transition-all duration-300 relative overflow-hidden"
           style={{ animationDelay: `${index * 100}ms` }}
         >
-          {/* Premium background icon graphic */}
-          <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
-            <stat.icon className="w-full h-full text-primary" strokeWidth={1} />
+          {/* Background icon graphic - large and subtle */}
+          <div className="absolute top-0 right-0 w-40 h-40 -mr-10 -mt-10 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+            <stat.icon className="w-full h-full text-primary" strokeWidth={0.5} />
           </div>
 
-          {/* Icon and change badge */}
-          <div className="relative flex items-center justify-between mb-4">
-            <stat.icon className="h-8 w-8 text-primary group-hover:scale-110 transition-transform duration-300" strokeWidth={2} />
+          {/* Change badge */}
+          <div className="relative flex items-center justify-end mb-4">
             <div className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
               {stat.change}
             </div>
           </div>
 
+          {/* Label - main text indicator */}
+          <p className="relative text-sm text-muted-foreground font-medium mb-1">{stat.label}</p>
+
           {/* Value */}
-          <div className="relative mb-1">
+          <div className="relative">
             <AnimatedNumber value={stat.value} suffix={stat.suffix} />
           </div>
-
-          {/* Label */}
-          <p className="relative text-sm text-muted-foreground font-medium">{stat.label}</p>
         </div>
       ))}
     </div>
