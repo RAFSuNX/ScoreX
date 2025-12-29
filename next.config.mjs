@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  // Use Terser for minification instead of SWC to avoid QEMU ARM64 build issues
+  swcMinify: false,
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client', 'bcryptjs', 'pdf.js-extract', 'canvas'],
   },

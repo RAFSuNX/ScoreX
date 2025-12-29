@@ -4,8 +4,18 @@ import { Features } from "@/components/landing/Features";
 import { Pricing } from "@/components/landing/Pricing";
 import { Testimonials } from "@/components/landing/Testimonials";
 import { Footer } from "@/components/landing/Footer";
+import { getAuthSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+export default async function Home() {
+  // Check if user is already logged in
+  const session = await getAuthSession();
+
+  // If user is authenticated, redirect to dashboard
+  if (session && session.user) {
+    redirect("/dashboard");
+  }
+
   return (
     <main className="min-h-screen bg-background">
       <Navbar />
