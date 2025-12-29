@@ -6,14 +6,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const clientIp = getClientIp(request);
 
-  // Apply rate limiting based on route
-  if (pathname.startsWith('/api/auth/')) {
-    // Rate limit auth endpoints (5 per 15 minutes)
-    const result = await rateLimiters.auth.check(5, clientIp);
-    if (!result.success) {
-      return createRateLimitResponse(result.resetTime);
-    }
-  } else if (pathname.startsWith('/api/ai/generate')) {
+  // Apply rate limiting only for AI generation
+  if (pathname.startsWith('/api/ai/generate')) {
     // Rate limit AI generation (10 per hour)
     const result = await rateLimiters.aiGeneration.check(10, clientIp);
     if (!result.success) {
@@ -22,12 +16,6 @@ export async function middleware(request: NextRequest) {
   } else if (pathname.startsWith('/api/exams/upload-pdf')) {
     // Rate limit file uploads (20 per hour)
     const result = await rateLimiters.fileUpload.check(20, clientIp);
-    if (!result.success) {
-      return createRateLimitResponse(result.resetTime);
-    }
-  } else if (pathname.startsWith('/api/')) {
-    // General API rate limit (100 per minute)
-    const result = await rateLimiters.api.check(100, clientIp);
     if (!result.success) {
       return createRateLimitResponse(result.resetTime);
     }
