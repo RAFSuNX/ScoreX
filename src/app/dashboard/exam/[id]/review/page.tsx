@@ -5,6 +5,7 @@ import { ArrowLeft, TrendingUp, TrendingDown, Clock, Calendar, CheckCircle, XCir
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import type { Session } from "next-auth";
+import ReactMarkdown from "react-markdown";
 
 export default async function ExamReviewPage({ params }: { params: { id: string } }) {
   const session = (await getAuthSession()) as Session | null;
@@ -236,9 +237,11 @@ export default async function ExamReviewPage({ params }: { params: { id: string 
                         <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                           <div className="flex items-start gap-3">
                             <AlertCircle className="h-5 w-5 text-primary mt-0.5" />
-                            <div>
-                              <h4 className="font-semibold mb-1">AI Feedback</h4>
-                              <p className="text-sm text-muted-foreground">{attempt.aiFeedback}</p>
+                            <div className="flex-1">
+                              <h4 className="font-semibold mb-2">AI Feedback</h4>
+                              <div className="text-sm text-muted-foreground prose prose-sm prose-invert max-w-none">
+                                <ReactMarkdown>{attempt.aiFeedback}</ReactMarkdown>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -289,9 +292,9 @@ export default async function ExamReviewPage({ params }: { params: { id: string 
                                         </p>
                                       )}
                                       {question.explanation && (
-                                        <p className="mt-2 text-muted-foreground italic">
-                                          {question.explanation}
-                                        </p>
+                                        <div className="mt-2 text-muted-foreground prose prose-sm prose-invert max-w-none">
+                                          <ReactMarkdown>{question.explanation}</ReactMarkdown>
+                                        </div>
                                       )}
                                     </div>
                                   </div>
