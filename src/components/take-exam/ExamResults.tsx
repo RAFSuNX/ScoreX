@@ -203,17 +203,31 @@ const ExamResults = ({
         </div>
 
         {/* AI Feedback */}
-        <div className="backdrop-blur-xl bg-card/60 border border-border/50 rounded-3xl p-6 mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">AI Analysis</h2>
+        <div className="backdrop-blur-xl bg-primary/10 border-2 border-primary/30 rounded-3xl p-8 mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <Sparkles className="w-6 h-6 text-primary" />
+            <h2 className="text-xl font-bold text-primary">AI Analysis</h2>
           </div>
-          
-          <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+
+          <div className="prose prose-base dark:prose-invert max-w-none leading-relaxed">
             {aiFeedback ? (
-              <ReactMarkdown>{aiFeedback}</ReactMarkdown>
+              <ReactMarkdown
+                components={{
+                  p: ({node, ...props}) => <p className="mb-4 text-foreground leading-relaxed" {...props} />,
+                  ul: ({node, ...props}) => <ul className="mb-4 space-y-2 text-foreground" {...props} />,
+                  ol: ({node, ...props}) => <ol className="mb-4 space-y-2 text-foreground" {...props} />,
+                  li: ({node, ...props}) => <li className="ml-4 text-foreground" {...props} />,
+                  h1: ({node, ...props}) => <h1 className="text-2xl font-bold mb-4 mt-6 text-foreground" {...props} />,
+                  h2: ({node, ...props}) => <h2 className="text-xl font-bold mb-3 mt-5 text-foreground" {...props} />,
+                  h3: ({node, ...props}) => <h3 className="text-lg font-semibold mb-2 mt-4 text-foreground" {...props} />,
+                  strong: ({node, ...props}) => <strong className="font-bold text-primary" {...props} />,
+                  code: ({node, ...props}) => <code className="bg-muted px-2 py-1 rounded text-sm" {...props} />,
+                }}
+              >
+                {aiFeedback}
+              </ReactMarkdown>
             ) : (
-              <p>No AI feedback available for this exam.</p>
+              <p className="text-muted-foreground">No AI feedback available for this exam.</p>
             )}
           </div>
         </div>

@@ -234,13 +234,27 @@ export default async function ExamReviewPage({ params }: { params: { id: string 
 
                       {/* AI Feedback */}
                       {attempt.aiFeedback && (
-                        <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                          <div className="flex items-start gap-3">
-                            <AlertCircle className="h-5 w-5 text-primary mt-0.5" />
+                        <div className="p-6 rounded-lg bg-primary/10 border-2 border-primary/30">
+                          <div className="flex items-start gap-4">
+                            <AlertCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                             <div className="flex-1">
-                              <h4 className="font-semibold mb-2">AI Feedback</h4>
-                              <div className="text-sm text-muted-foreground prose prose-sm prose-invert max-w-none">
-                                <ReactMarkdown>{attempt.aiFeedback}</ReactMarkdown>
+                              <h4 className="text-lg font-bold mb-4 text-primary">AI Feedback</h4>
+                              <div className="prose prose-base prose-invert max-w-none leading-relaxed">
+                                <ReactMarkdown
+                                  components={{
+                                    p: ({node, ...props}) => <p className="mb-4 text-foreground leading-relaxed" {...props} />,
+                                    ul: ({node, ...props}) => <ul className="mb-4 space-y-2 text-foreground" {...props} />,
+                                    ol: ({node, ...props}) => <ol className="mb-4 space-y-2 text-foreground" {...props} />,
+                                    li: ({node, ...props}) => <li className="ml-4 text-foreground" {...props} />,
+                                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold mb-4 mt-6 text-foreground" {...props} />,
+                                    h2: ({node, ...props}) => <h2 className="text-xl font-bold mb-3 mt-5 text-foreground" {...props} />,
+                                    h3: ({node, ...props}) => <h3 className="text-lg font-semibold mb-2 mt-4 text-foreground" {...props} />,
+                                    strong: ({node, ...props}) => <strong className="font-bold text-primary" {...props} />,
+                                    code: ({node, ...props}) => <code className="bg-muted px-2 py-1 rounded text-sm" {...props} />,
+                                  }}
+                                >
+                                  {attempt.aiFeedback}
+                                </ReactMarkdown>
                               </div>
                             </div>
                           </div>
