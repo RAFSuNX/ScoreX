@@ -150,19 +150,18 @@ export default async function MyExamsPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Link href={`/dashboard/exam/${exam.id}`}>
+                    {hasAttempt && (
+                      <Link href={`/dashboard/exam/${exam.id}/review`}>
+                        <Button variant="outline">
+                          <Eye className="h-4 w-4 mr-2" />
+                          Review
+                        </Button>
+                      </Link>
+                    )}
+                    <Link href={`/dashboard/exam/${exam.id}/take`}>
                       <Button variant={hasAttempt ? "outline" : "default"}>
-                        {hasAttempt ? (
-                          <>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Review
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-4 w-4 mr-2" />
-                            Start Exam
-                          </>
-                        )}
+                        <Play className="h-4 w-4 mr-2" />
+                        {hasAttempt ? "Retake" : "Start"}
                       </Button>
                     </Link>
                   </div>
