@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
 
 interface QuestionResult {
   id: string;
@@ -210,7 +211,7 @@ const ExamResults = ({
           
           <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
             {aiFeedback ? (
-              <p>{aiFeedback}</p>
+              <ReactMarkdown>{aiFeedback}</ReactMarkdown>
             ) : (
               <p>No AI feedback available for this exam.</p>
             )}
