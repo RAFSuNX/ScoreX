@@ -11,6 +11,9 @@ services:
       - DATABASE_URL=postgresql://scorex_user:scorex_password@postgres:5432/scorex_db
       - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=super-secret-key-change-in-production-abc123xyz789
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - pdf_storage:/app/uploads
     depends_on:
       - postgres
 
@@ -27,3 +30,4 @@ services:
 
 volumes:
   postgres_data:
+  pdf_storage:

@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { getAuthSession } from '@/lib/auth';
-import axios from 'axios';
-import { AttemptStatus, Prisma, ExamAttempt } from '@prisma/client'; // Import AttemptStatus enum and Prisma
+import { AttemptStatus, Prisma, ExamAttempt, QuestionType } from '@prisma/client';
 
 export const dynamic = "force-dynamic";
 
@@ -24,16 +23,6 @@ interface DetailedReportItem {
   isCorrect: boolean;
   explanation: string | null;
   points: number;
-}
-
-interface FeedbackChoice {
-  message: {
-    content: string;
-  };
-}
-
-interface FeedbackResponse {
-  choices: FeedbackChoice[];
 }
 
 type SubjectStatsRecord = Record<string, { count: number; totalScore: number; avgScore: number }>;
@@ -104,28 +93,22 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     else if (percentage >= 50) calculatedPercentile = 50; // Top 50%
     else calculatedPercentile = 70; // Bottom 30% or more
 
-    const feedbackPrompt = `A student has just completed an exam. Here is a summary of their performance:
-- Score: ${score}/${maxScore} (${percentage.toFixed(2)}%)
-- Time Spent: ${timeSpent} seconds
-- Detailed Report:
-${JSON.stringify(detailedReport, null, 2)}
+    // Generate AI feedback using centralized service
+    const { aiService } = await import('@/lib/ai/service');
 
-Please provide personalized feedback for the student. The feedback should be encouraging and constructive. Highlight their strengths and weaknesses. Provide specific suggestions for improvement. The feedback should be in Markdown format.`;
-
-    const feedbackResponse = await axios.post<FeedbackResponse>(
-      'https://openrouter.ai/api/v1/chat/completions',
-      {
-        model: process.env.AI_MODEL_GRADING || 'openai/gpt-4-turbo-preview',
-        messages: [{ role: 'user', content: feedbackPrompt }],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        },
-      }
-    );
-
-    const aiFeedback = feedbackResponse.data.choices[0]?.message.content ?? '';
+    const aiFeedback = await aiService.generateFeedback({
+      examTitle: exam.title,
+      questions: detailedReport.map((item) => ({
+        questionText: item.text,
+        questionType: item.type as QuestionType,
+        correctAnswer: item.correctAnswer,
+        userAnswer: item.userAnswer,
+        options: null, // Can be extended if needed
+      })),
+      score,
+      maxScore,
+      percentage,
+    });
 
     let examAttempt: ExamAttempt;
 
@@ -275,7 +258,28 @@ Please provide personalized feedback for the student. The feedback should be enc
       });
     }
 
-    return NextResponse.json({ ...examAttempt, detailedReport, calculatedPercentile }, { status: 200 });
+    // Check for new badges and achievements
+    try {
+      const { checkAndUnlockBadges } = await import('@/lib/gamification/badges');
+      const { updateAchievementProgress } = await import('@/lib/gamification/achievements');
+
+      const newBadges = await checkAndUnlockBadges(session.user.id);
+      const newAchievements = await updateAchievementProgress(session.user.id);
+
+      return NextResponse.json({
+        ...examAttempt,
+        detailedReport,
+        calculatedPercentile,
+        gamification: {
+          newBadges,
+          newAchievements,
+        }
+      }, { status: 200 });
+    } catch (gamificationError) {
+      console.error('Gamification check failed:', gamificationError);
+      // Return response even if gamification fails
+      return NextResponse.json({ ...examAttempt, detailedReport, calculatedPercentile }, { status: 200 });
+    }
 
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {

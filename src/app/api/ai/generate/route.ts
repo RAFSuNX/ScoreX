@@ -2,12 +2,11 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAuthSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
-import axios from 'axios';
-import { Prisma } from '@prisma/client';
+import { aiService } from '@/lib/ai/service';
+import { QuestionType } from '@prisma/client';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 const generateQuestionsSchema = z.object({
   examId: z.string(),
@@ -15,25 +14,7 @@ const generateQuestionsSchema = z.object({
 
 type GenerateQuestionsBody = z.infer<typeof generateQuestionsSchema>;
 
-interface GeneratedQuestionPayload {
-  questionText: string;
-  questionType: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
-  options: Record<string, string> | null;
-  correctAnswer: string;
-  explanation: string;
-}
-
-interface OpenRouterChoice {
-  message: {
-    content: string;
-  };
-}
-
-interface OpenRouterResponse {
-  choices: OpenRouterChoice[];
-}
-
-// Background processing function
+// Background processing function using centralized AI service
 async function processExamGeneration(examId: string) {
   try {
     // Update status: Reading content
@@ -66,11 +47,8 @@ async function processExamGeneration(examId: string) {
       data: { currentStep: 'Analyzing key concepts' },
     });
 
-    const prompt = `Based on the following text, generate 10 questions in a JSON object format with a "questions" key, which contains an array of questions. Each question should be an object with the following fields: "questionText" (string), "questionType" (enum: "MULTIPLE_CHOICE", "TRUE_FALSE", "SHORT_ANSWER"), "options" (object with keys A, B, C, D for MULTIPLE_CHOICE, null otherwise), "correctAnswer" (string, the key for MULTIPLE_CHOICE), and "explanation" (string).
-
-Text: """
-${exam.sourceText}
-"""`;
+    // Optional: Analyze content to get suggestions
+    // const analysis = await aiService.analyzeContent(exam.sourceText);
 
     // Update status: Generating questions
     await prisma.exam.update({
@@ -78,73 +56,78 @@ ${exam.sourceText}
       data: { currentStep: 'Generating questions' },
     });
 
-    const response = await axios.post<OpenRouterResponse>(
-      'https://openrouter.ai/api/v1/chat/completions',
-      {
-        model: env.AI_MODEL_GENERATION,
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: "json_object" },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-        },
-      }
-    );
-
-    const aiResponse = response.data.choices[0]?.message.content ?? '{"questions": []}';
-    const generatedQuestions = JSON.parse(aiResponse).questions as GeneratedQuestionPayload[];
-
-    // Update status: Review & finalize
-    await prisma.exam.update({
-      where: { id: examId },
-      data: { currentStep: 'Review & finalize' },
+    // Use centralized AI service for question generation
+    const result = await aiService.generateExam({
+      sourceText: exam.sourceText,
+      title: exam.title,
+      subject: exam.subject,
+      difficulty: exam.difficulty,
+      questionCount: 10,
+      questionTypes: [
+        QuestionType.MULTIPLE_CHOICE,
+        QuestionType.TRUE_FALSE,
+        QuestionType.SHORT_ANSWER,
+      ],
     });
 
-    const createdQuestions = await prisma.$transaction(
-      generatedQuestions.map((q, index) => {
-        const optionsValue =
-          q.options === null ? undefined : (q.options as Prisma.JsonObject | undefined);
+    if (!result.questions || result.questions.length === 0) {
+      throw new Error('No questions were generated');
+    }
 
-        return prisma.question.create({
-          data: {
-            examId: exam.id,
-            questionText: q.questionText,
-            questionType: q.questionType,
-            options: optionsValue,
-            correctAnswer: q.correctAnswer,
-            explanation: q.explanation,
-            points: 1,
-            order: index + 1,
-          },
-        });
-      })
-    );
+    // Update status: Finalizing
+    await prisma.exam.update({
+      where: { id: examId },
+      data: { currentStep: 'Finalizing exam' },
+    });
 
-    // Mark as completed
+    // Save questions to database
+    await prisma.question.createMany({
+      data: result.questions.map((q, idx) => ({
+        examId: exam.id,
+        questionText: q.questionText,
+        questionType: q.questionType,
+        options:
+          q.options && q.questionType === 'MULTIPLE_CHOICE'
+            ? { A: q.options[0], B: q.options[1], C: q.options[2], D: q.options[3] }
+            : undefined,
+        correctAnswer: q.correctAnswer,
+        explanation: q.explanation || '',
+        points: q.points || 1,
+        order: idx + 1,
+      })),
+    });
+
+    // Mark exam as completed
     await prisma.exam.update({
       where: { id: examId },
       data: {
         generationStatus: 'COMPLETED',
-        currentStep: null,
+        currentStep: 'Complete',
+        generationError: null,
       },
     });
 
-    logger.info('Exam generation completed successfully', { examId, questionCount: createdQuestions.length });
+    logger.info('Exam generation completed successfully', {
+      examId,
+      questionsGenerated: result.questions.length,
+    });
   } catch (error: unknown) {
-    logger.error('Background exam generation error', error, { examId });
+    logger.error('Exam generation failed', error, { examId });
+
     await prisma.exam.update({
       where: { id: examId },
       data: {
         generationStatus: 'FAILED',
-        generationError: error instanceof Error ? error.message : 'An unexpected error occurred',
+        generationError:
+          error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred during generation',
       },
     });
   }
 }
 
 export async function POST(req: Request) {
-  let body: GenerateQuestionsBody | null = null;
   try {
     const session = await getAuthSession();
 
@@ -152,9 +135,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    body = await req.json();
-    const { examId } = generateQuestionsSchema.parse(body);
+    const body: GenerateQuestionsBody = await req.json();
+    const validationResult = generateQuestionsSchema.safeParse(body);
 
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { message: 'Invalid request body', errors: validationResult.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const { examId } = validationResult.data;
+
+    // Verify exam exists and belongs to user
     const exam = await prisma.exam.findUnique({
       where: { id: examId },
     });
@@ -163,36 +156,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Exam not found' }, { status: 404 });
     }
 
-    if (!exam.sourceText) {
-      return NextResponse.json({ message: 'Exam source text not found' }, { status: 404 });
-    }
-
-    // Verify ownership
     if (exam.userId !== session.user.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
+      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
-    // Start background processing (don't await it)
+    if (exam.generationStatus === 'PROCESSING') {
+      return NextResponse.json(
+        { message: 'Exam generation already in progress' },
+        { status: 409 }
+      );
+    }
+
+    if (exam.generationStatus === 'COMPLETED') {
+      return NextResponse.json(
+        { message: 'Exam has already been generated' },
+        { status: 409 }
+      );
+    }
+
+    // Start background generation
     processExamGeneration(examId).catch((error) => {
-      logger.error('Failed to start background processing', error, { examId });
+      logger.error('Background exam generation error', error, { examId });
     });
 
-    // Return immediately with job started status
     return NextResponse.json(
       {
+        message: 'Exam generation started',
         examId,
         status: 'PROCESSING',
-        message: 'Exam generation started',
       },
       { status: 202 }
     );
-
   } catch (error: unknown) {
-    if (error instanceof z.ZodError) {
-      logger.warn('AI generation validation failed', { issues: error.issues });
-      return NextResponse.json({ message: error.issues[0].message }, { status: 400 });
-    }
-    logger.error('AI generation error', error, { examId: body?.examId });
-    return NextResponse.json({ message: 'An unexpected error occurred.' }, { status: 500 });
+    logger.error('Error starting exam generation', error);
+    return NextResponse.json(
+      { message: 'An unexpected error occurred' },
+      { status: 500 }
+    );
   }
 }

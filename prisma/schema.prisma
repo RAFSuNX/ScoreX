@@ -19,6 +19,8 @@ model User {
   attempts     ExamAttempt[]
   streak       Streak?
   stats        UserStats?
+  badges       UserBadge[]
+  achievements UserAchievement[]
 }
 
 model Exam {
@@ -134,4 +136,79 @@ enum GenerationStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+// Gamification Models
+model Badge {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String
+  icon        String      // Emoji or icon identifier
+  category    BadgeCategory
+  requirement String      // Human-readable requirement description
+  points      Int         @default(0) // Points awarded for earning this badge
+  createdAt   DateTime    @default(now())
+  userBadges  UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  badgeId   String
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+  unlockedAt DateTime @default(now())
+  seen      Boolean  @default(false) // For showing "new badge" notification
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+model Achievement {
+  id              String            @id @default(cuid())
+  name            String            @unique
+  description     String
+  icon            String            // Emoji or icon identifier
+  category        AchievementCategory
+  targetValue     Int               // Target to achieve (e.g., 10 exams, 7 day streak)
+  currentValue    Int               @default(0) // Current progress
+  points          Int               @default(0) // Points awarded
+  createdAt       DateTime          @default(now())
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  progress      Int         @default(0) // Current progress towards achievement
+  completed     Boolean     @default(false)
+  completedAt   DateTime?
+  seen          Boolean     @default(false) // For showing "new achievement" notification
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([completed])
+}
+
+enum BadgeCategory {
+  STREAK
+  EXAM_COUNT
+  SCORE
+  SUBJECT_MASTERY
+  SPEED
+  SPECIAL
+}
+
+enum AchievementCategory {
+  LEARNING_JOURNEY
+  STREAK_MASTER
+  SUBJECT_EXPERT
+  SCORE_EXCELLENCE
+  SPEED_DEMON
+  MILESTONE
 }

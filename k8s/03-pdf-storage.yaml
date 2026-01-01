@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pdf-storage-pvc
+  namespace: scorex
+spec:
+  accessModes:
+    - ReadWriteMany  # Allow multiple pods to access the same volume
+  resources:
+    requests:
+      storage: 10Gi  # 10GB for PDF files
+  storageClassName: longhorn  # Use Longhorn for distributed storage

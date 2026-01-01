@@ -3,6 +3,9 @@ import { getAuthSession } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { PDFExtract } from 'pdf.js-extract';
 import type { Session } from 'next-auth';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
+import { existsSync } from 'fs';
 
 export const dynamic = "force-dynamic";
 
@@ -46,16 +49,34 @@ export async function POST(req: Request) {
       }
     }
 
-    // In a real app, you would upload the PDF to cloud storage (e.g., S3)
-    // and get a public URL here. For now, use a dummy URL.
-    const dummySourcePdfUrl = `https://example.com/pdfs/${pdfFile.name}`; 
+    // Save PDF to local storage
+    const uploadDir = process.env.UPLOAD_DIR || '/app/uploads';
+    const userDir = path.join(uploadDir, session.user.id);
+
+    // Create user directory if it doesn't exist
+    if (!existsSync(userDir)) {
+      await mkdir(userDir, { recursive: true });
+    }
+
+    // Generate unique filename with timestamp
+    const timestamp = Date.now();
+    const sanitizedFileName = pdfFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fileName = `${timestamp}-${sanitizedFileName}`;
+    const filePath = path.join(userDir, fileName);
+
+    // Save the PDF file
+    await writeFile(filePath, buffer);
+
+    // Generate URL path for the PDF
+    const sourcePdfUrl = `/uploads/${session.user.id}/${fileName}`;
 
     logger.info('PDF uploaded and extracted successfully', {
       fileName: pdfFile.name,
+      savedPath: filePath,
       textLength: extractedText.length,
       userId: session.user.id
     });
-    return NextResponse.json({ extractedText, sourcePdfUrl: dummySourcePdfUrl }, { status: 200 });
+    return NextResponse.json({ extractedText, sourcePdfUrl }, { status: 200 });
 
   } catch (error: unknown) {
     logger.error('Error during PDF upload and extraction', error, { userId: session?.user?.id });
