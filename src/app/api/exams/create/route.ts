@@ -17,12 +17,13 @@ const MONTHLY_EXAM_LIMITS: Record<Plan, number> = {
 const createExamSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters long'),
   description: z.string().optional(),
-  sourceType: z.enum(['PDF', 'DESCRIPTION']),
+  sourceType: z.enum(['PDF', 'DESCRIPTION', 'QUESTION_BANK']), // Added QUESTION_BANK
   sourceText: z.string().optional(),
   sourcePdfUrl: z.string().optional(), // Added for PDF handling
   difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']),
   subject: z.string().min(3, 'Subject must be at least 3 characters long'),
   aiModel: z.string().optional(),
+  questionIds: z.array(z.string()).optional(), // For building exams from question bank
 });
 
 type CreateExamPayload = z.infer<typeof createExamSchema>;
@@ -75,32 +76,98 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json()) as CreateExamPayload;
-    const { title, description, sourceType, sourceText, sourcePdfUrl, difficulty, subject, aiModel } = createExamSchema.parse(body);
+    const { title, description, sourceType, sourceText, sourcePdfUrl, difficulty, subject, aiModel, questionIds } = createExamSchema.parse(body);
 
-    if (!sourceText) {
-      return NextResponse.json({ message: 'Source text is required (extracted from PDF or provided as description)' }, { status: 400 });
-    }
-    // For PDF type: ensure sourcePdfUrl is present
-    if (sourceType === 'PDF' && !sourcePdfUrl) {
+    // Validation based on source type
+    if (sourceType === 'QUESTION_BANK') {
+      // For QUESTION_BANK: ensure questionIds are provided
+      if (!questionIds || questionIds.length === 0) {
+        return NextResponse.json({ message: 'Question IDs are required when building from question bank' }, { status: 400 });
+      }
+
+      // Check if user has access to Question Bank (Pro feature)
+      if (user.plan === 'FREE') {
+        return NextResponse.json(
+          { message: 'Building exams from Question Bank is a Pro feature. Please upgrade your plan.' },
+          { status: 403 }
+        );
+      }
+
+      // Verify that all questions exist and belong to the user
+      const questions = await prisma.question.findMany({
+        where: {
+          id: { in: questionIds },
+          questionBank: {
+            userId: userId,
+          },
+        },
+      });
+
+      if (questions.length !== questionIds.length) {
+        return NextResponse.json(
+          { message: 'Some questions not found or do not belong to you' },
+          { status: 404 }
+        );
+      }
+
+      // Create exam with questions copied from the bank
+      const exam = await prisma.exam.create({
+        data: {
+          title,
+          description,
+          sourceType,
+          sourceText: `Exam created from Question Bank with ${questions.length} questions`,
+          difficulty,
+          subject,
+          userId: session.user.id,
+          aiModel: aiModel || 'question-bank',
+          generationStatus: 'COMPLETED', // Mark as completed since questions are already provided
+          questions: {
+            create: questions.map((q, index) => ({
+              questionText: q.questionText,
+              questionType: q.questionType,
+              options: q.options ?? undefined,
+              correctAnswer: q.correctAnswer,
+              explanation: q.explanation ?? undefined,
+              points: q.points,
+              order: index,
+            })),
+          },
+        },
+        include: {
+          questions: true,
+        },
+      });
+
+      logger.info('Exam created from question bank', { examId: exam.id, userId: session.user.id, questionCount: questions.length });
+      return NextResponse.json(exam, { status: 201 });
+    } else {
+      // For PDF and DESCRIPTION types
+      if (!sourceText) {
+        return NextResponse.json({ message: 'Source text is required (extracted from PDF or provided as description)' }, { status: 400 });
+      }
+      // For PDF type: ensure sourcePdfUrl is present
+      if (sourceType === 'PDF' && !sourcePdfUrl) {
         return NextResponse.json({ message: 'Source PDF URL is required for PDF-based exams' }, { status: 400 });
+      }
+
+      const exam = await prisma.exam.create({
+        data: {
+          title,
+          description,
+          sourceType,
+          sourceText: sourceText || null, // Store sourceText for both PDF (extracted text) and DESCRIPTION
+          sourcePdfUrl: sourceType === 'PDF' ? sourcePdfUrl : null, // Conditionally save sourcePdfUrl
+          difficulty,
+          subject,
+          userId: session.user.id,
+          aiModel: aiModel || 'default-model',
+        },
+      });
+
+      logger.info('Exam created successfully', { examId: exam.id, userId: session.user.id });
+      return NextResponse.json(exam, { status: 201 });
     }
-
-    const exam = await prisma.exam.create({
-      data: {
-        title,
-        description,
-        sourceType,
-        sourceText: sourceText || null, // Store sourceText for both PDF (extracted text) and DESCRIPTION
-        sourcePdfUrl: sourceType === 'PDF' ? sourcePdfUrl : null, // Conditionally save sourcePdfUrl
-        difficulty,
-        subject,
-        userId: session.user.id,
-        aiModel: aiModel || 'default-model',
-      },
-    });
-
-    logger.info('Exam created successfully', { examId: exam.id, userId: session.user.id });
-    return NextResponse.json(exam, { status: 201 });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       logger.warn('Exam creation validation failed', { issues: error.issues });

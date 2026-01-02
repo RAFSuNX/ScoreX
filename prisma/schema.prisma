@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
@@ -9,18 +9,19 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  name         String?
-  passwordHash String
-  plan         Plan          @default(FREE)
-  createdAt    DateTime      @default(now())
-  exams        Exam[]
-  attempts     ExamAttempt[]
-  streak       Streak?
-  stats        UserStats?
-  badges       UserBadge[]
-  achievements UserAchievement[]
+  id            String            @id @default(cuid())
+  email         String            @unique
+  name          String?
+  passwordHash  String
+  plan          Plan              @default(FREE)
+  createdAt     DateTime          @default(now())
+  exams         Exam[]
+  attempts      ExamAttempt[]
+  streak        Streak?
+  stats         UserStats?
+  badges        UserBadge[]
+  achievements  UserAchievement[]
+  questionBanks QuestionBank[]
 }
 
 model Exam {
@@ -44,39 +45,60 @@ model Exam {
   updatedAt        DateTime         @updatedAt
 }
 
+model QuestionBank {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  subject   String
+  title     String // Name for the question bank (e.g., "Biology - Cell Structure")
+  questions Question[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([userId, subject])
+}
+
 model Question {
-  id            String       @id @default(cuid())
-  examId        String
-  exam          Exam         @relation(fields: [examId], references: [id])
-  questionText  String       @db.Text
-  questionType  QuestionType
-  options       Json?
-  correctAnswer String       @db.Text
-  explanation   String?      @db.Text
-  points        Int          @default(1)
-  order         Int
+  id             String        @id @default(cuid())
+  examId         String?
+  exam           Exam?         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  questionBankId String?
+  questionBank   QuestionBank? @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+  questionText   String        @db.Text
+  questionType   QuestionType
+  options        Json?
+  correctAnswer  String        @db.Text
+  explanation    String?       @db.Text
+  points         Int           @default(1)
+  order          Int
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([examId])
+  @@index([questionBankId])
 }
 
 model ExamAttempt {
-  id                     String        @id @default(cuid())
-  userId                 String
-  user                   User          @relation(fields: [userId], references: [id])
-  examId                 String
-  exam                   Exam          @relation(fields: [examId], references: [id])
-  status                 AttemptStatus @default(IN_PROGRESS)
-  submittedAnswers       Json? // Final answers after submission
-  inProgressAnswers      Json? // Answers saved during the exam session
-  score                  Float?
-  maxScore               Float?
-  percentage             Float?
-  aiFeedback             String?       @db.Text
-  timeSpent              Int?
-  completedAt            DateTime?
-  currentQuestionIndex   Int?          @default(0)
-  flaggedQuestions       Json? // Stores IDs of flagged questions
+  id                   String        @id @default(cuid())
+  userId               String
+  user                 User          @relation(fields: [userId], references: [id])
+  examId               String
+  exam                 Exam          @relation(fields: [examId], references: [id])
+  status               AttemptStatus @default(IN_PROGRESS)
+  submittedAnswers     Json? // Final answers after submission
+  inProgressAnswers    Json? // Answers saved during the exam session
+  score                Float?
+  maxScore             Float?
+  percentage           Float?
+  aiFeedback           String?       @db.Text
+  timeSpent            Int?
+  completedAt          DateTime?
+  currentQuestionIndex Int?          @default(0)
+  flaggedQuestions     Json? // Stores IDs of flagged questions
 
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum AttemptStatus {
@@ -117,6 +139,7 @@ enum Plan {
 enum SourceType {
   PDF
   DESCRIPTION
+  QUESTION_BANK
 }
 
 enum Difficulty {
@@ -128,6 +151,7 @@ enum Difficulty {
 enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
+  FILL_IN_THE_BLANK
   SHORT_ANSWER
 }
 
@@ -140,40 +164,40 @@ enum GenerationStatus {
 
 // Gamification Models
 model Badge {
-  id          String      @id @default(cuid())
-  name        String      @unique
+  id          String        @id @default(cuid())
+  name        String        @unique
   description String
-  icon        String      // Emoji or icon identifier
+  icon        String // Emoji or icon identifier
   category    BadgeCategory
-  requirement String      // Human-readable requirement description
-  points      Int         @default(0) // Points awarded for earning this badge
-  createdAt   DateTime    @default(now())
+  requirement String // Human-readable requirement description
+  points      Int           @default(0) // Points awarded for earning this badge
+  createdAt   DateTime      @default(now())
   userBadges  UserBadge[]
 }
 
 model UserBadge {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  badgeId   String
-  badge     Badge    @relation(fields: [badgeId], references: [id])
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  badgeId    String
+  badge      Badge    @relation(fields: [badgeId], references: [id])
   unlockedAt DateTime @default(now())
-  seen      Boolean  @default(false) // For showing "new badge" notification
+  seen       Boolean  @default(false) // For showing "new badge" notification
 
   @@unique([userId, badgeId])
   @@index([userId])
 }
 
 model Achievement {
-  id              String            @id @default(cuid())
-  name            String            @unique
-  description     String
-  icon            String            // Emoji or icon identifier
-  category        AchievementCategory
-  targetValue     Int               // Target to achieve (e.g., 10 exams, 7 day streak)
-  currentValue    Int               @default(0) // Current progress
-  points          Int               @default(0) // Points awarded
-  createdAt       DateTime          @default(now())
+  id               String              @id @default(cuid())
+  name             String              @unique
+  description      String
+  icon             String // Emoji or icon identifier
+  category         AchievementCategory
+  targetValue      Int // Target to achieve (e.g., 10 exams, 7 day streak)
+  currentValue     Int                 @default(0) // Current progress
+  points           Int                 @default(0) // Points awarded
+  createdAt        DateTime            @default(now())
   userAchievements UserAchievement[]
 }
 

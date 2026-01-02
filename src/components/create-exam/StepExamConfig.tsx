@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Check } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ChevronDown, Check, Crown } from "lucide-react";
+import UpgradeModal from "@/components/UpgradeModal";
 
 const subjects = [
   "Mathematics",
@@ -12,9 +15,10 @@ const subjects = [
 ];
 
 const questionTypes = [
-  { id: "multiple-choice", label: "Multiple Choice" },
-  { id: "true-false", label: "True/False" },
-  { id: "short-answer", label: "Short Answer" },
+  { id: "multiple-choice", label: "Multiple Choice", isPro: false },
+  { id: "true-false", label: "True/False", isPro: false },
+  { id: "fill-in-the-blank", label: "Fill in the Blank", isPro: true },
+  { id: "short-answer", label: "Short Answer", isPro: false },
 ];
 
 interface ExamConfig {
@@ -31,6 +35,7 @@ interface StepExamConfigProps {
 }
 
 export const StepExamConfig = ({ onNext, onBack }: StepExamConfigProps) => {
+  const { data: session } = useSession();
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
   const [subjectOpen, setSubjectOpen] = useState(false);
@@ -38,6 +43,9 @@ export const StepExamConfig = ({ onNext, onBack }: StepExamConfigProps) => {
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [questionCount, setQuestionCount] = useState(15);
   const [selectedTypes, setSelectedTypes] = useState<string[]>(["multiple-choice"]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const userPlan = session?.user?.plan || "FREE";
 
   useEffect(() => {
     if (!subjectOpen) return;
@@ -55,7 +63,13 @@ export const StepExamConfig = ({ onNext, onBack }: StepExamConfigProps) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [subjectOpen]);
 
-  const toggleQuestionType = (typeId: string) => {
+  const toggleQuestionType = (typeId: string, isPro: boolean) => {
+    // Check if user has access to Pro features
+    if (isPro && userPlan === "FREE") {
+      setShowUpgradeModal(true);
+      return;
+    }
+
     setSelectedTypes((prev) =>
       prev.includes(typeId)
         ? prev.filter((t) => t !== typeId)
@@ -194,28 +208,41 @@ export const StepExamConfig = ({ onNext, onBack }: StepExamConfigProps) => {
             Question Types
           </label>
           <div className="space-y-2">
-            {questionTypes.map((type) => (
-              <button
-                key={type.id}
-                onClick={() => toggleQuestionType(type.id)}
-                className={`w-full p-3 rounded-xl border-2 flex items-center gap-3 transition-all ${
-                  selectedTypes.includes(type.id)
-                    ? "bg-primary/10 border-primary/30 text-foreground"
-                    : "border-border/50 bg-muted/30 text-muted-foreground hover:bg-muted/50"
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 rounded flex items-center justify-center ${
-                    selectedTypes.includes(type.id)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted/50"
+            {questionTypes.map((type) => {
+              const isLocked = type.isPro && userPlan === "FREE";
+              const isSelected = selectedTypes.includes(type.id);
+
+              return (
+                <button
+                  key={type.id}
+                  onClick={() => toggleQuestionType(type.id, type.isPro)}
+                  className={`w-full p-3 rounded-xl border-2 flex items-center gap-3 transition-all ${
+                    isSelected
+                      ? "bg-primary/10 border-primary/30 text-foreground"
+                      : isLocked
+                      ? "border-border/50 bg-muted/20 text-muted-foreground opacity-75 cursor-pointer"
+                      : "border-border/50 bg-muted/30 text-muted-foreground hover:bg-muted/50"
                   }`}
                 >
-                  {selectedTypes.includes(type.id) && <Check className="h-3 w-3" />}
-                </div>
-                <span className="font-medium">{type.label}</span>
-              </button>
-            ))}
+                  <div
+                    className={`w-5 h-5 rounded flex items-center justify-center ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted/50"
+                    }`}
+                  >
+                    {isSelected && <Check className="h-3 w-3" />}
+                  </div>
+                  <span className="font-medium flex-1 text-left">{type.label}</span>
+                  {type.isPro && (
+                    <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
+                      <Crown className="w-3 h-3 mr-1" />
+                      Pro
+                    </Badge>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -233,6 +260,14 @@ export const StepExamConfig = ({ onNext, onBack }: StepExamConfigProps) => {
           Next Step
         </Button>
       </div>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="Fill-in-the-Blank questions"
+        currentPlan={userPlan as any}
+      />
     </div>
   );
 };

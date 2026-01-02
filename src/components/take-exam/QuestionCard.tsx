@@ -1,7 +1,7 @@
-import { Check, Flag } from "lucide-react";
+import { Check, Flag, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type QuestionType = "multiple-choice" | "true-false" | "short-answer";
+export type QuestionType = "multiple-choice" | "true-false" | "fill-in-the-blank" | "short-answer";
 
 export interface Question {
   id: string;
@@ -36,6 +36,8 @@ const QuestionCard = ({
         return "Multiple Choice";
       case "true-false":
         return "True / False";
+      case "fill-in-the-blank":
+        return "Fill in the Blank";
       case "short-answer":
         return "Short Answer";
     }
@@ -112,24 +114,48 @@ const QuestionCard = ({
         )}
 
         {question.type === "true-false" && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3">
             {["True", "False"].map((option) => (
               <button
                 key={option}
                 onClick={() => onAnswerSelect(option)}
                 className={cn(
-                  "p-6 rounded-2xl border text-center font-semibold text-lg transition-colors",
+                  "w-full flex items-center gap-4 p-4 rounded-2xl border transition-colors text-left",
                   selectedAnswer === option
                     ? "bg-primary/20 border-primary/50 text-foreground shadow-lg shadow-primary/10"
                     : "bg-muted/30 border-border/50 text-foreground hover:bg-muted/50 hover:border-border"
                 )}
               >
-                {selectedAnswer === option && (
-                  <Check className="w-5 h-5 mx-auto mb-2" />
-                )}
-                {option}
+                <span
+                  className={cn(
+                    "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
+                    selectedAnswer === option
+                      ? "border-primary bg-primary"
+                      : "border-muted-foreground"
+                  )}
+                >
+                  {selectedAnswer === option ? (
+                    <Circle className="w-3 h-3 fill-primary-foreground text-primary-foreground" />
+                  ) : null}
+                </span>
+                <span className="flex-1 font-medium">{option}</span>
               </button>
             ))}
+          </div>
+        )}
+
+        {question.type === "fill-in-the-blank" && (
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={selectedAnswer || ""}
+              onChange={(e) => onAnswerSelect(e.target.value)}
+              placeholder="Type your answer..."
+              className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
+            />
+            <p className="text-sm text-muted-foreground">
+              Fill in the blank with the correct word or phrase
+            </p>
           </div>
         )}
 

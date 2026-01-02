@@ -1,11 +1,13 @@
 import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { ArrowLeft, TrendingUp, TrendingDown, Clock, Calendar, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Clock, Calendar, CheckCircle, XCircle, AlertCircle, Brain, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import type { Session } from "next-auth";
 import ReactMarkdown from "react-markdown";
+import { ShareButton } from "@/components/exam/ShareButton";
+import { DownloadPDFButton } from "@/components/exam/DownloadPDFButton";
 
 export default async function ExamReviewPage({ params }: { params: { id: string } }) {
   const session = (await getAuthSession()) as Session | null;
@@ -327,8 +329,19 @@ export default async function ExamReviewPage({ params }: { params: { id: string 
         </div>
       </div>
 
-      {/* Action Button */}
-      <div className="flex justify-center">
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
+        <ShareButton examId={exam.id} examTitle={exam.title} />
+        <DownloadPDFButton examId={exam.id} />
+        <Link href={`/dashboard/exam/${exam.id}/study`}>
+          <Button size="lg" variant="outline" className="relative group">
+            <Brain className="w-5 h-5 mr-2" />
+            Study with Flashcards
+            {session.user.plan === "FREE" && (
+              <Crown className="w-4 h-4 ml-2 text-primary" />
+            )}
+          </Button>
+        </Link>
         <Link href={`/dashboard/exam/${exam.id}/take`}>
           <Button size="lg">
             Retake Exam

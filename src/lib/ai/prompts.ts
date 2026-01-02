@@ -69,6 +69,8 @@ export function getExamGenerationPrompt(params: ExamGenerationParams): {
           return '- Multiple Choice: Provide 4 options (A, B, C, D) with one correct answer';
         case 'TRUE_FALSE':
           return '- True/False: Create clear statements that are definitively true or false';
+        case 'FILL_IN_THE_BLANK':
+          return '- Fill in the Blank: Create sentences with a key term or concept replaced by _____, requiring precise recall';
         case 'SHORT_ANSWER':
           return '- Short Answer: Require 1-3 sentence responses showing understanding';
         default:
@@ -105,10 +107,10 @@ OUTPUT FORMAT (JSON):
 {
   "questions": [
     {
-      "questionText": "Clear, specific question",
-      "questionType": "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER",
+      "questionText": "Clear, specific question (use _____ for fill-in-the-blank)",
+      "questionType": "MULTIPLE_CHOICE" | "TRUE_FALSE" | "FILL_IN_THE_BLANK" | "SHORT_ANSWER",
       "options": ["A", "B", "C", "D"] (for MULTIPLE_CHOICE only),
-      "correctAnswer": "The correct answer",
+      "correctAnswer": "The correct answer (exact word/phrase for FILL_IN_THE_BLANK)",
       "explanation": "Detailed explanation of why this is correct and why others are wrong",
       "points": 1
     }

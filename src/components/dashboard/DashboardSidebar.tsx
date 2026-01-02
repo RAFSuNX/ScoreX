@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, FileText, PlusCircle, BarChart3, Settings, LogOut, Crown } from "lucide-react";
+import { LayoutDashboard, FileText, PlusCircle, BarChart3, Settings, LogOut, Crown, Library } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -9,6 +9,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: FileText, label: "My Exams", href: "/dashboard/exams" },
   { icon: PlusCircle, label: "Create Exam", href: "/dashboard/create" },
+  { icon: Library, label: "Question Bank", href: "/dashboard/bank" },
   { icon: BarChart3, label: "Statistics", href: "/dashboard/stats" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ];
@@ -65,8 +66,12 @@ export const DashboardSidebar = () => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground truncate">{session?.user?.name}</p>
               <div className="flex items-center gap-1">
-                <Crown className="h-3 w-3 text-primary" />
-                <span className="text-xs text-primary font-medium">Pro Plan</span>
+                {session?.user?.plan !== "FREE" && (
+                  <Crown className="h-3 w-3 text-primary" />
+                )}
+                <span className={`text-xs font-medium ${session?.user?.plan === "FREE" ? "text-muted-foreground" : "text-primary"}`}>
+                  {session?.user?.plan || "FREE"} Plan
+                </span>
               </div>
             </div>
             <button onClick={() => signOut()} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">

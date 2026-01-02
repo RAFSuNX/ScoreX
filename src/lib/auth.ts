@@ -45,20 +45,23 @@ export const authOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
+          plan: user.plan,
         };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user?: { id?: string } | null }) {
+    async jwt({ token, user }: { token: JWT; user?: { id?: string; plan?: string } | null }) {
       if (user?.id) {
         token.id = user.id;
+        token.plan = user.plan as any;
       }
       return token;
     },
     async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.plan = token.plan;
       }
       return session;
     },

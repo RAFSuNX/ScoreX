@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, FileText, PlusCircle, BarChart3, Settings, Menu, X } from "lucide-react";
+import { LayoutDashboard, FileText, PlusCircle, BarChart3, Settings, Menu, X, Library } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -9,6 +9,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: FileText, label: "My Exams", href: "/dashboard/exams" },
   { icon: PlusCircle, label: "Create Exam", href: "/dashboard/create" },
+  { icon: Library, label: "Question Bank", href: "/dashboard/bank" },
   { icon: BarChart3, label: "Statistics", href: "/dashboard/stats" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ];
