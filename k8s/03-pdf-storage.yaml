@@ -5,7 +5,7 @@ metadata:
   namespace: scorex
 spec:
   accessModes:
-    - ReadWriteMany  # Allow multiple pods to access the same volume
+    - ReadWriteOnce  # Single pod access (more compatible with Longhorn)
   resources:
     requests:
       storage: 10Gi  # 10GB for PDF files
