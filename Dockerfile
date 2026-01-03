@@ -2,14 +2,18 @@
 
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
 RUN apk add --no-cache libc6-compat openssl \
     build-base g++ cairo-dev jpeg-dev pango-dev giflib-dev
 WORKDIR /app
@@ -29,11 +33,12 @@ RUN npm run build
 
 # Stage 3: Runner (Production)
 FROM node:20-alpine AS runner
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
 RUN apk add --no-cache openssl libc6-compat \
     cairo pango jpeg giflib
 WORKDIR /app
 
-ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs
