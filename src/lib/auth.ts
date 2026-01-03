@@ -13,6 +13,7 @@ export const authOptions = {
   session: {
     strategy: "jwt",
   },
+  trustHost: true,
   providers: [
     CredentialsProvider({
       name: "Credentials",
