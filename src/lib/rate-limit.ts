@@ -45,10 +45,10 @@ export class RateLimiter {
     if (redisClient) {
       const count = await redisClient.incr(key);
       if (count === 1) {
-        await redisClient.pexpire(key, this.interval);
+        await redisClient.pExpire(key, this.interval);
       }
 
-      const ttlMs = await redisClient.pttl(key);
+      const ttlMs = await redisClient.pTTL(key);
       const resetTime = now + Math.max(ttlMs, 0);
 
       if (count > limit) {
