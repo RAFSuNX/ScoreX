@@ -17,6 +17,9 @@ const envSchema = z.object({
     .min(1, 'OPENROUTER_API_KEY is required')
     .startsWith('sk-or-v1-', 'OPENROUTER_API_KEY must be a valid API key'),
 
+  // Redis
+  REDIS_URL: z.string().url().optional(),
+
   // AI Models
   AI_MODEL_GENERATION: z.string().optional().default('openai/gpt-4o-mini'),
   AI_MODEL_GRADING: z.string().optional().default('openai/gpt-4o-mini'),
@@ -25,6 +28,9 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
+
+  // Billing
+  BILLING_SELF_SERVICE_ENABLED: z.coerce.boolean().optional().default(false),
 });
 
 // Validate environment variables

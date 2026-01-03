@@ -1,23 +1,23 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { rateLimiters, getClientIp, createRateLimitResponse } from '@/lib/rate-limit';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const clientIp = getClientIp(request);
+  const method = request.method;
 
-  // Apply rate limiting only for AI generation
-  if (pathname.startsWith('/api/ai/generate')) {
-    // Rate limit AI generation (10 per hour)
-    const result = await rateLimiters.aiGeneration.check(10, clientIp);
-    if (!result.success) {
-      return createRateLimitResponse(result.resetTime);
-    }
-  } else if (pathname.startsWith('/api/exams/upload-pdf')) {
-    // Rate limit file uploads (20 per hour)
-    const result = await rateLimiters.fileUpload.check(20, clientIp);
-    if (!result.success) {
-      return createRateLimitResponse(result.resetTime);
+  if (
+    pathname.startsWith('/api/') &&
+    method !== 'GET' &&
+    method !== 'HEAD' &&
+    method !== 'OPTIONS'
+  ) {
+    const origin = request.headers.get('origin');
+    const requestOrigin = request.nextUrl.origin;
+    if (origin && origin !== requestOrigin) {
+      return NextResponse.json(
+        { message: 'Forbidden - Invalid origin' },
+        { status: 403 }
+      );
     }
   }
 

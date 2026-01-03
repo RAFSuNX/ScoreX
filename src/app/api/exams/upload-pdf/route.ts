@@ -6,16 +6,29 @@ import type { Session } from 'next-auth';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
+import { rateLimiters, getClientIp, createRateLimitResponse } from '@/lib/rate-limit';
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   let session: Session | null = null;
   try {
+    const rateLimit = await rateLimiters.fileUpload.check(20, getClientIp(req));
+    if (!rateLimit.success) {
+      return createRateLimitResponse(rateLimit.resetTime);
+    }
+
     session = await getAuthSession();
 
     if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (session.user.plan === 'FREE') {
+      return NextResponse.json(
+        { message: 'PDF uploads are a Pro feature. Please upgrade your plan.' },
+        { status: 403 }
+      );
     }
 
     const formData = await req.formData();
@@ -36,6 +49,14 @@ export async function POST(req: Request) {
     // Convert File to Buffer for pdf.js-extract
     const arrayBuffer = await pdfFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    const signature = buffer.subarray(0, 4).toString('utf8');
+    if (signature !== '%PDF') {
+      return NextResponse.json(
+        { message: 'Invalid PDF file' },
+        { status: 400 }
+      );
+    }
 
     const pdfExtract = new PDFExtract();
     const data = await pdfExtract.extractBuffer(buffer, {}); // Use extractBuffer

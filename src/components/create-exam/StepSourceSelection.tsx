@@ -1,18 +1,22 @@
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { FileUp, Edit3, X, FileText, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface StepSourceSelectionProps {
   onNext: (data: { sourceType: "pdf" | "topic"; file?: File; topic?: string }) => void;
+  currentPlan?: "FREE" | "PRO" | "PREMIUM";
 }
 
-export const StepSourceSelection = ({ onNext }: StepSourceSelectionProps) => {
+export const StepSourceSelection = ({ onNext, currentPlan = "FREE" }: StepSourceSelectionProps) => {
+  const router = useRouter();
   const [sourceType, setSourceType] = useState<"pdf" | "topic" | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [topic, setTopic] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isPdfLocked = currentPlan === "FREE";
 
   const handleFileSelect = (selectedFile: File) => {
     if (selectedFile.size > 10 * 1024 * 1024) {
@@ -43,6 +47,11 @@ export const StepSourceSelection = ({ onNext }: StepSourceSelectionProps) => {
     (sourceType === "topic" && topic.trim().length >= 10);
 
   const handleNext = () => {
+    if (sourceType === "pdf" && isPdfLocked) {
+      router.push("/billing/checkout?plan=PRO");
+      return;
+    }
+
     if (sourceType === "pdf" && file) {
       onNext({ sourceType: "pdf", file });
     } else if (sourceType === "topic" && topic) {
@@ -64,12 +73,18 @@ export const StepSourceSelection = ({ onNext }: StepSourceSelectionProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Option A: Upload PDF */}
         <div
-          onClick={() => setSourceType("pdf")}
-          className={`morphic-card p-6 cursor-pointer transition-all duration-300 hover:-translate-y-1 group relative overflow-hidden ${
+          onClick={() => {
+            if (isPdfLocked) {
+              router.push("/billing/checkout?plan=PRO");
+              return;
+            }
+            setSourceType("pdf");
+          }}
+          className={`morphic-card p-6 transition-all duration-300 hover:-translate-y-1 group relative overflow-hidden ${
             sourceType === "pdf"
               ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
               : ""
-          }`}
+          } ${isPdfLocked ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
         >
           <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
             <FileUp className="w-full h-full text-primary" strokeWidth={0.5} />
@@ -77,9 +92,14 @@ export const StepSourceSelection = ({ onNext }: StepSourceSelectionProps) => {
           <div className="mb-4 relative">
             <h3 className="font-bold text-foreground">Upload PDF</h3>
             <p className="text-sm text-muted-foreground">Max 10MB</p>
+            {isPdfLocked && (
+              <span className="mt-2 inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                Pro feature
+              </span>
+            )}
           </div>
 
-          {sourceType === "pdf" && (
+          {sourceType === "pdf" && !isPdfLocked && (
             <div className="space-y-4 animate-fade-in">
               {!file ? (
                 <div

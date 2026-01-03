@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,9 +10,11 @@ import { User, Mail, Lock, Bell, Palette, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
+  const router = useRouter();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
 
   const [profile, setProfile] = useState({
     name: session?.user?.name || "",
@@ -54,6 +57,39 @@ export default function SettingsPage() {
       setPassword({ current: "", new: "", confirm: "" });
       setIsSaving(false);
     }, 1000);
+  };
+
+  const currentPlan = session?.user?.plan || "FREE";
+
+  const handlePlanDowngrade = async (plan: "FREE" | "PRO") => {
+    setIsUpdatingPlan(true);
+    try {
+      const response = await fetch("/api/billing/plan", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, action: "downgrade" }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { message?: string };
+        throw new Error(payload.message || "Unable to update plan");
+      }
+
+      await update();
+      toast({
+        title: "Plan updated",
+        description: `Your plan is now ${plan}.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Plan update failed",
+        description:
+          error instanceof Error ? error.message : "Unable to update plan",
+      });
+    } finally {
+      setIsUpdatingPlan(false);
+    }
   };
 
   return (
@@ -119,6 +155,79 @@ export default function SettingsPage() {
             <Lock className="h-4 w-4 mr-2" />
             Update Password
           </Button>
+        </div>
+      </div>
+
+      <div className="morphic-card p-6 group relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500">
+          <User className="w-full h-full text-primary" strokeWidth={0.5} />
+        </div>
+        <div className="mb-6 relative">
+          <h2 className="text-xl font-bold">Subscription</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage your current plan
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="rounded-lg border p-4">
+            <p className="text-sm text-muted-foreground">Current plan</p>
+            <p className="text-lg font-semibold text-foreground">{currentPlan}</p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            {currentPlan === "FREE" && (
+              <>
+                <Button
+                  onClick={() => router.push("/billing/checkout?plan=PRO")}
+                >
+                  Upgrade to Pro
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => router.push("/billing/checkout?plan=PREMIUM")}
+                >
+                  Upgrade to Premium
+                </Button>
+              </>
+            )}
+
+            {currentPlan === "PRO" && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => handlePlanDowngrade("FREE")}
+                  disabled={isUpdatingPlan}
+                >
+                  {isUpdatingPlan ? "Updating..." : "Downgrade to Free"}
+                </Button>
+                <Button
+                  onClick={() => router.push("/billing/checkout?plan=PREMIUM")}
+                >
+                  Upgrade to Premium
+                </Button>
+              </>
+            )}
+
+            {currentPlan === "PREMIUM" && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => handlePlanDowngrade("PRO")}
+                  disabled={isUpdatingPlan}
+                >
+                  {isUpdatingPlan ? "Updating..." : "Downgrade to Pro"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handlePlanDowngrade("FREE")}
+                  disabled={isUpdatingPlan}
+                >
+                  {isUpdatingPlan ? "Updating..." : "Downgrade to Free"}
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

@@ -23,7 +23,14 @@ export async function GET(
     }
 
     const uploadDir = process.env.UPLOAD_DIR || '/app/uploads';
-    const filePath = path.join(uploadDir, params.userId, params.fileName);
+    const userDir = path.join(uploadDir, params.userId);
+    const filePath = path.join(userDir, params.fileName);
+    const resolvedFilePath = path.resolve(filePath);
+    const resolvedUserDir = path.resolve(userDir) + path.sep;
+
+    if (!resolvedFilePath.startsWith(resolvedUserDir)) {
+      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    }
 
     // Check if file exists
     if (!existsSync(filePath)) {
@@ -34,11 +41,12 @@ export async function GET(
     const fileBuffer = await readFile(filePath);
 
     // Return the PDF with appropriate headers
+    const safeFileName = params.fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
     return new NextResponse(fileBuffer, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="${params.fileName}"`,
+        'Content-Disposition': `inline; filename="${safeFileName}"`,
       },
     });
   } catch (error: unknown) {

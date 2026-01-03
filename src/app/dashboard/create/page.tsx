@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import axios from "axios";
 import { ExamWizardProgress } from "@/components/create-exam/ExamWizardProgress";
 import { StepSourceSelection } from "@/components/create-exam/StepSourceSelection";
@@ -26,11 +27,13 @@ interface ExamData {
 
 export default function CreateExamPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [examData, setExamData] = useState<Partial<ExamData>>({});
   const [examId, setExamId] = useState<string | null>(null);
+  const currentPlan = session?.user?.plan || "FREE";
 
   const handleSourceNext = (data: { sourceType: "pdf" | "topic"; file?: File; topic?: string }) => {
     setExamData((prev) => ({ ...prev, ...data }));
@@ -142,7 +145,12 @@ export default function CreateExamPage() {
       <ExamWizardProgress currentStep={currentStep} steps={steps} />
 
       <div className="morphic-card p-6 sm:p-8">
-        {currentStep === 1 && <StepSourceSelection onNext={handleSourceNext} />}
+        {currentStep === 1 && (
+          <StepSourceSelection
+            onNext={handleSourceNext}
+            currentPlan={currentPlan}
+          />
+        )}
         {currentStep === 2 && (
           <StepExamConfig
             onNext={handleConfigNext}

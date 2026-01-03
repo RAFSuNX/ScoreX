@@ -3,6 +3,7 @@ import { hash } from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
+import { rateLimiters, getClientIp, createRateLimitResponse } from '@/lib/rate-limit';
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,11 @@ type SignupPayload = z.infer<typeof signupSchema>;
 
 export async function POST(req: Request) {
   try {
+    const rateLimit = await rateLimiters.auth.check(5, getClientIp(req));
+    if (!rateLimit.success) {
+      return createRateLimitResponse(rateLimit.resetTime);
+    }
+
     const body = (await req.json()) as SignupPayload;
     const { name, email, password } = signupSchema.parse(body);
 
@@ -30,7 +36,10 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
-      return NextResponse.json({ message: 'User already exists' }, { status: 409 });
+      return NextResponse.json(
+        { message: 'Unable to create account' },
+        { status: 409 }
+      );
     }
 
     const passwordHash = await hash(password, 12);

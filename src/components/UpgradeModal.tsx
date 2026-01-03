@@ -20,10 +20,8 @@ const UpgradeModal = ({
   if (!isOpen) return null;
 
   const handleUpgrade = (plan: string) => {
-    // TODO: Implement payment flow
-    console.log(`Upgrading to ${plan}`);
-    // For now, just redirect to pricing page
-    window.location.href = "/pricing";
+    const targetPlan = plan === "PREMIUM" ? "PREMIUM" : "PRO";
+    window.location.href = `/billing/checkout?plan=${targetPlan}`;
   };
 
   return (

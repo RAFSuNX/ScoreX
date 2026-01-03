@@ -18,7 +18,7 @@ export const DownloadPDFButton = ({ examId }: DownloadPDFButtonProps) => {
   const handleDownload = async () => {
     // Check if user is PRO/PREMIUM
     if (session?.user?.plan === "FREE") {
-      router.push("/pricing");
+      router.push("/billing/checkout?plan=PRO");
       return;
     }
 

@@ -6,6 +6,7 @@ import { compare } from "bcryptjs";
 import { getServerSession } from "next-auth/next";
 import type { Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
+import { rateLimiters, getClientIp } from "@/lib/rate-limit";
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
@@ -19,7 +20,12 @@ export const authOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
+        const rateLimit = await rateLimiters.auth.check(5, getClientIp(req));
+        if (!rateLimit.success) {
+          throw new Error("TooManyRequests");
+        }
+
         if (!credentials?.email || !credentials.password) {
           return null;
         }
@@ -51,11 +57,30 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user?: { id?: string; plan?: string } | null }) {
+    async jwt({
+      token,
+      user,
+      trigger,
+    }: {
+      token: JWT;
+      user?: { id?: string; plan?: string } | null;
+      trigger?: "signIn" | "update";
+    }) {
       if (user?.id) {
         token.id = user.id;
         token.plan = user.plan as any;
       }
+
+      if (trigger === "update" && token.id) {
+        const refreshed = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { plan: true },
+        });
+        if (refreshed?.plan) {
+          token.plan = refreshed.plan;
+        }
+      }
+
       return token;
     },
     async session({ session, token }: { session: Session; token: JWT }) {

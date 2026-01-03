@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { aiService } from '@/lib/ai/service';
 import { QuestionType } from '@prisma/client';
+import { rateLimiters, getClientIp, createRateLimitResponse } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -129,6 +130,11 @@ async function processExamGeneration(examId: string) {
 
 export async function POST(req: Request) {
   try {
+    const rateLimit = await rateLimiters.aiGeneration.check(10, getClientIp(req));
+    if (!rateLimit.success) {
+      return createRateLimitResponse(rateLimit.resetTime);
+    }
+
     const session = await getAuthSession();
 
     if (!session || !session.user || !session.user.id) {

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getRedisClient } from '@/lib/redis';
 
 interface RateLimitStore {
   count: number;
@@ -22,20 +23,44 @@ setInterval(() => {
 interface RateLimitOptions {
   interval: number; // Time window in milliseconds
   uniqueTokenPerInterval: number; // Max requests per interval
+  keyPrefix: string;
 }
 
 export class RateLimiter {
   private interval: number;
   private uniqueTokenPerInterval: number;
+  private keyPrefix: string;
 
   constructor(options: RateLimitOptions) {
     this.interval = options.interval;
     this.uniqueTokenPerInterval = options.uniqueTokenPerInterval;
+    this.keyPrefix = options.keyPrefix;
   }
 
   async check(limit: number, token: string): Promise<{ success: boolean; remaining: number; resetTime: number }> {
     const now = Date.now();
-    const key = `${token}`;
+    const key = `${this.keyPrefix}:${token}`;
+    const redisClient = await getRedisClient();
+
+    if (redisClient) {
+      const count = await redisClient.incr(key);
+      if (count === 1) {
+        await redisClient.pexpire(key, this.interval);
+      }
+
+      const ttlMs = await redisClient.pttl(key);
+      const resetTime = now + Math.max(ttlMs, 0);
+
+      if (count > limit) {
+        return { success: false, remaining: 0, resetTime };
+      }
+
+      return {
+        success: true,
+        remaining: Math.max(limit - count, 0),
+        resetTime,
+      };
+    }
 
     const record = rateLimitStore.get(key);
 
@@ -61,29 +86,43 @@ export const rateLimiters = {
   auth: new RateLimiter({
     interval: 15 * 60 * 1000,
     uniqueTokenPerInterval: 500,
+    keyPrefix: 'rate:auth',
   }),
 
   // API endpoints: 100 requests per minute
   api: new RateLimiter({
     interval: 60 * 1000,
     uniqueTokenPerInterval: 500,
+    keyPrefix: 'rate:api',
   }),
 
   // AI generation: 10 requests per hour (expensive operation)
   aiGeneration: new RateLimiter({
     interval: 60 * 60 * 1000,
     uniqueTokenPerInterval: 500,
+    keyPrefix: 'rate:ai',
   }),
 
   // File upload: 20 requests per hour
   fileUpload: new RateLimiter({
     interval: 60 * 60 * 1000,
     uniqueTokenPerInterval: 500,
+    keyPrefix: 'rate:upload',
+  }),
+
+  // Billing updates: 10 requests per hour
+  billing: new RateLimiter({
+    interval: 60 * 60 * 1000,
+    uniqueTokenPerInterval: 500,
+    keyPrefix: 'rate:billing',
   }),
 };
 
 // Helper function to get client IP
-export function getClientIp(request: Request): string {
+export function getClientIp(request?: Request | null): string {
+  if (!request) {
+    return 'unknown';
+  }
   const forwarded = request.headers.get('x-forwarded-for');
   const realIp = request.headers.get('x-real-ip');
 

@@ -12,10 +12,12 @@ services:
       - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=super-secret-key-change-in-production-abc123xyz789
       - UPLOAD_DIR=/app/uploads
+      - REDIS_URL=redis://redis:6379
     volumes:
       - pdf_storage:/app/uploads
     depends_on:
       - postgres
+      - redis
 
   postgres:
     image: postgres:14-alpine
@@ -28,6 +30,15 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
 volumes:
   postgres_data:
   pdf_storage:
+  redis_data:

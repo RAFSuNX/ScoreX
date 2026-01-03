@@ -146,7 +146,7 @@ export default function FlashcardStudyPage() {
               <Button
                 variant="hero"
                 size="lg"
-                onClick={() => router.push("/pricing")}
+                onClick={() => router.push("/billing/checkout?plan=PRO")}
               >
                 <Crown className="w-5 h-5 mr-2" />
                 Upgrade to Pro - $19/month

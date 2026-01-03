@@ -223,7 +223,7 @@ export default function QuestionBankPage() {
               </ul>
             </div>
             <div className="flex gap-3 justify-center pt-4">
-              <Button size="lg" onClick={() => router.push("/pricing")}>
+              <Button size="lg" onClick={() => router.push("/billing/checkout?plan=PRO")}>
                 <Crown className="w-4 h-4 mr-2" />
                 Upgrade to Pro
               </Button>
