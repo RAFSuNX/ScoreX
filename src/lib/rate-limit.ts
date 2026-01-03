@@ -119,12 +119,30 @@ export const rateLimiters = {
 };
 
 // Helper function to get client IP
-export function getClientIp(request?: Request | null): string {
-  if (!request) {
+type HeaderSource = Headers | Record<string, string | string[] | undefined>;
+
+function getHeaderValue(headers: HeaderSource, name: string): string | null {
+  if (headers instanceof Headers) {
+    return headers.get(name);
+  }
+
+  const value = headers[name] ?? headers[name.toLowerCase()];
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value ?? null;
+}
+
+export function getClientIp(
+  request?: { headers: HeaderSource } | null
+): string {
+  if (!request?.headers) {
     return 'unknown';
   }
-  const forwarded = request.headers.get('x-forwarded-for');
-  const realIp = request.headers.get('x-real-ip');
+
+  const forwarded = getHeaderValue(request.headers, 'x-forwarded-for');
+  const realIp = getHeaderValue(request.headers, 'x-real-ip');
 
   if (forwarded) {
     return forwarded.split(',')[0].trim();
