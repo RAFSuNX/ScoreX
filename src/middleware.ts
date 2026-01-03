@@ -12,8 +12,26 @@ export async function middleware(request: NextRequest) {
     method !== 'OPTIONS'
   ) {
     const origin = request.headers.get('origin');
-    const requestOrigin = request.nextUrl.origin;
-    if (origin && origin !== requestOrigin) {
+    const host = request.headers.get('host');
+    const forwardedHost = request.headers.get('x-forwarded-host');
+    const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+
+    // Construct the expected origin from headers (for reverse proxies like Cloudflared)
+    // Try x-forwarded-host first, then regular host header, then internal origin
+    const expectedOrigin = forwardedHost
+      ? `${forwardedProto}://${forwardedHost}`
+      : host
+      ? `${forwardedProto}://${host}`
+      : request.nextUrl.origin;
+
+    // Also check against configured NEXTAUTH_URL for production
+    const allowedOrigins = [
+      expectedOrigin,
+      process.env.NEXTAUTH_URL,
+      request.nextUrl.origin
+    ].filter(Boolean);
+
+    if (origin && !allowedOrigins.includes(origin)) {
       return NextResponse.json(
         { message: 'Forbidden - Invalid origin' },
         { status: 403 }
