@@ -135,7 +135,7 @@ function getHeaderValue(headers: HeaderSource, name: string): string | null {
 }
 
 export function getClientIp(
-  request?: { headers: HeaderSource } | null
+  request?: { headers?: HeaderSource } | null
 ): string {
   if (!request?.headers) {
     return 'unknown';
