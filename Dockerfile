@@ -2,8 +2,6 @@
 
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
-ARG NODE_ENV=production
-ENV NODE_ENV=${NODE_ENV}
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
@@ -12,8 +10,6 @@ RUN npm ci --omit=dev
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
-ARG NODE_ENV=production
-ENV NODE_ENV=${NODE_ENV}
 RUN apk add --no-cache libc6-compat openssl \
     build-base g++ cairo-dev jpeg-dev pango-dev giflib-dev
 WORKDIR /app
@@ -22,7 +18,6 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-COPY --from=deps /app/node_modules ./node_modules
 
 # Generate Prisma Client
 RUN npx prisma generate
